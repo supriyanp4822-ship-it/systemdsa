@@ -1,0 +1,423 @@
+{% extends 'base.html' %}
+
+{% block title %}Hospital Queue Management System - Book Appointment{% endblock %}
+
+{% block head %}
+<style>
+    /* ── Appointment Page Specific Styles ── */
+    .appt-page { padding: 100px 20px 60px; min-height: 100vh; }
+
+    .appt-wrapper {
+        max-width: 1200px; margin: 0 auto;
+        display: grid; grid-template-columns: 1fr 1fr; gap: 32px;
+    }
+
+    /* ── Info Panel ── */
+    .appt-info {
+        background: linear-gradient(135deg, #0d3b66 0%, #1a5276 50%, #1e6f8e 100%);
+        border-radius: 20px; padding: 40px; color: #fff;
+        display: flex; flex-direction: column; justify-content: center;
+    }
+    .appt-info h2 { font-size: 2rem; margin-bottom: 12px; font-weight: 700; }
+    .appt-info > p { opacity: .85; line-height: 1.6; margin-bottom: 28px; }
+    .appt-info .step-card {
+        display: flex; align-items: flex-start; gap: 16px;
+        background: rgba(255,255,255,.1); border-radius: 12px;
+        padding: 18px 20px; margin-bottom: 14px;
+        backdrop-filter: blur(6px); transition: background .25s;
+    }
+    .appt-info .step-card:hover { background: rgba(255,255,255,.18); }
+    .appt-info .step-card i { font-size: 1.5rem; margin-top: 2px; color: #7dd3fc; flex-shrink: 0; }
+    .appt-info .step-card h4 { margin: 0 0 4px; font-weight: 600; }
+    .appt-info .step-card p  { margin: 0; font-size: .88rem; opacity: .85; }
+
+    /* ── Form Card ── */
+    .appt-form-card {
+        background: #fff; border-radius: 20px; padding: 40px;
+        box-shadow: 0 8px 32px rgba(13,59,102,.10);
+    }
+    .appt-form-card h2 { color: #0d3b66; margin-bottom: 6px; font-weight: 700; }
+    .appt-form-card .subtitle { color: #64748b; margin-bottom: 28px; font-size: .92rem; }
+
+    .appt-form-card .form-group { margin-bottom: 20px; }
+    .appt-form-card .form-group label {
+        display: block; font-weight: 600; margin-bottom: 6px; color: #334155; font-size: .92rem;
+    }
+    .appt-form-card .form-group label i { margin-right: 6px; color: #1a5276; }
+    .appt-form-card .form-control {
+        width: 100%; padding: 12px 14px; border-radius: 10px;
+        border: 1.5px solid #cbd5e1; font-size: .95rem;
+        transition: border-color .2s, box-shadow .2s; background: #f8fafc;
+        font-family: inherit;
+    }
+    .appt-form-card .form-control:focus {
+        outline: none; border-color: #1a5276;
+        box-shadow: 0 0 0 3px rgba(26,82,118,.12);
+    }
+
+    /* ── Doctor Info Card ── */
+    .doctor-info-card {
+        display: none; background: linear-gradient(135deg,#f0f9ff,#e0f2fe);
+        border-radius: 14px; padding: 20px; margin-bottom: 20px;
+        border: 1px solid #bae6fd;
+        animation: slideDown .35s ease;
+    }
+    .doctor-info-card.show { display: block; }
+    .doctor-info-card h4 { margin: 0 0 12px; color: #0c4a6e; font-size: 1.05rem; }
+    .doc-meta { display: flex; flex-wrap: wrap; gap: 10px; }
+    .doc-meta .badge {
+        display: inline-flex; align-items: center; gap: 6px;
+        background: #fff; padding: 6px 14px; border-radius: 20px;
+        font-size: .82rem; font-weight: 500; color: #334155;
+        border: 1px solid #e2e8f0;
+    }
+    .doc-meta .badge i { color: #1a5276; }
+    .badge-available { color: #15803d !important; border-color: #bbf7d0 !important; background: #f0fdf4 !important; }
+    .badge-unavailable { color: #b91c1c !important; border-color: #fecaca !important; background: #fef2f2 !important; }
+
+    /* ── Slots Grid ── */
+    .slots-section { display: none; margin-bottom: 20px; animation: slideDown .35s ease; }
+    .slots-section.show { display: block; }
+    .slots-section h4 { margin: 0 0 12px; color: #0c4a6e; font-weight: 600; }
+    .slots-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(110px,1fr)); gap: 10px; }
+    .slot-btn {
+        padding: 10px 6px; border-radius: 10px;
+        border: 1.5px solid #cbd5e1; background: #f8fafc;
+        font-size: .88rem; font-weight: 500; cursor: pointer;
+        text-align: center; transition: all .2s; color: #334155;
+    }
+    .slot-btn:hover { border-color: #1a5276; background: #e0f2fe; }
+    .slot-btn.selected {
+        background: #0d3b66; color: #fff; border-color: #0d3b66;
+        box-shadow: 0 4px 12px rgba(13,59,102,.25);
+    }
+    .slots-empty { text-align: center; color: #94a3b8; padding: 24px 0; font-size: .92rem; }
+
+    /* ── Fee Card ── */
+    .fee-card {
+        display: none; padding: 16px 20px; background: #f8fbff;
+        border-radius: 12px; margin-bottom: 20px; border: 1px solid #e2e8f0;
+    }
+    .fee-card.show { display: block; }
+    .fee-card p { margin: 0; color: #64748b; font-size: .85rem; }
+    .fee-card h3 { margin: 5px 0 0; color: #0d3b66; font-size: 1.4rem; }
+
+    .btn-submit {
+        width: 100%; padding: 14px; border: none; border-radius: 12px;
+        background: linear-gradient(135deg,#0d3b66,#1a5276); color: #fff;
+        font-size: 1.05rem; font-weight: 600; cursor: pointer;
+        transition: transform .15s, box-shadow .2s;
+    }
+    .btn-submit:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(13,59,102,.3); }
+    .btn-submit:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+    /* ── Spinner ── */
+    .slot-spinner { text-align: center; padding: 30px 0; color: #64748b; }
+    .slot-spinner i { animation: spin .8s linear infinite; font-size: 1.3rem; margin-right: 8px; }
+
+    @keyframes slideDown { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    @media (max-width: 768px) {
+        .appt-wrapper { grid-template-columns: 1fr; }
+        .appt-info { order: 2; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="appt-page">
+    <div class="appt-wrapper">
+        <!-- Info Panel -->
+        <div class="appt-info reveal">
+            <h2>Book Your Consultation</h2>
+            <p>Schedule a visit with our experienced specialists. Follow these steps to secure your appointment.</p>
+            <div class="step-card">
+                <i class="fa-solid fa-hospital"></i>
+                <div>
+                    <h4>1. Select Hospital & Department</h4>
+                    <p>Choose the hospital nearest to you and the department relevant to your condition.</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <i class="fa-solid fa-user-doctor"></i>
+                <div>
+                    <h4>2. Choose Your Doctor</h4>
+                    <p>View doctor details including specialization, room number, and today's queue.</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <i class="fa-regular fa-clock"></i>
+                <div>
+                    <h4>3. Pick a Time Slot</h4>
+                    <p>Select from real-time availability. Already booked slots are hidden automatically.</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <i class="fa-solid fa-credit-card"></i>
+                <div>
+                    <h4>4. Confirm & Pay</h4>
+                    <p>Complete a secure checkout to lock in your appointment and receive your unique ID.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Card -->
+        <div class="appt-form-card reveal">
+            <h2>Appointment Scheduling</h2>
+            <p class="subtitle">Complete the fields below to schedule your visit.</p>
+
+            <form id="bookForm" method="POST" action="/appointments/book">
+                <!-- Hospital -->
+                <div class="form-group">
+                    <label for="hospital_id"><i class="fa-solid fa-hospital"></i> Select Hospital</label>
+                    <select id="hospital_id" class="form-control" required>
+                        <option value="" disabled selected>Choose a hospital...</option>
+                        {% for h in hospitals %}
+                        <option value="{{ h.id }}">{{ h.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Department -->
+                <div class="form-group">
+                    <label for="department_id"><i class="fa-solid fa-building"></i> Select Department</label>
+                    <select id="department_id" class="form-control" disabled required>
+                        <option value="" disabled selected>Select hospital first...</option>
+                    </select>
+                </div>
+
+                <!-- Doctor -->
+                <div class="form-group">
+                    <label for="doctor_id"><i class="fa-solid fa-user-doctor"></i> Select Doctor</label>
+                    <select id="doctor_id" name="doctor_id" class="form-control" disabled required>
+                        <option value="" disabled selected>Select department first...</option>
+                    </select>
+                </div>
+
+                <!-- Doctor Info Card -->
+                <div class="doctor-info-card" id="doctorInfoCard">
+                    <h4 id="docInfoName">Doctor Details</h4>
+                    <div class="doc-meta" id="docMeta"></div>
+                </div>
+
+                <!-- Date -->
+                <div class="form-group">
+                    <label for="date"><i class="fa-regular fa-calendar"></i> Appointment Date</label>
+                    <input type="date" id="date" name="date" class="form-control" required disabled>
+                </div>
+
+                <!-- Slots -->
+                <div class="slots-section" id="slotsSection">
+                    <h4><i class="fa-regular fa-clock"></i> Available Time Slots</h4>
+                    <div id="slotsContainer"></div>
+                </div>
+
+                <input type="hidden" id="time_slot" name="time_slot" value="">
+
+                <!-- Fee Card -->
+                <div class="fee-card" id="feeCard">
+                    <p>Consultation Fee Due:</p>
+                    <h3>₹<span id="feeAmount">0.00</span></h3>
+                </div>
+
+                <button type="submit" class="btn-submit" id="submitBtn" disabled>
+                    <i class="fa-solid fa-calendar-check"></i> Proceed to Checkout
+                </button>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    /* ── All doctors data embedded from server ── */
+    const allDoctors = [
+        {% for doc in doctors %}
+        {
+            id: {{ doc.id }},
+            name: "{{ doc.name | e }}",
+            specialty: "{{ doc.doctor_profile.specialty | e if doc.doctor_profile else 'General' }}",
+            hospital_id: {{ doc.doctor_profile.hospital_id if doc.doctor_profile and doc.doctor_profile.hospital_id else 'null' }},
+            fee: {{ doc.doctor_profile.consultation_fee if doc.doctor_profile else 300 }},
+            room: "{{ doc.doctor_profile.room_number | e if doc.doctor_profile and doc.doctor_profile.room_number else 'N/A' }}",
+            experience: {{ doc.doctor_profile.experience if doc.doctor_profile else 0 }},
+            rating: {{ doc.doctor_profile.rating if doc.doctor_profile else 0 }},
+            available_from: "{{ doc.doctor_profile.available_from if doc.doctor_profile else '09:00' }}",
+            available_to: "{{ doc.doctor_profile.available_to if doc.doctor_profile else '17:00' }}",
+            schedule_days: [{% if doc.doctor_profile %}{% for s in doc.doctor_profile.schedules %}"{{ s.day_of_week }}"{% if not loop.last %},{% endif %}{% endfor %}{% endif %}]
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    /* ── All departments data ── */
+    const allDepartments = [
+        {% for dept in departments %}
+        { id: {{ dept.id }}, name: "{{ dept.name | e }}" }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    /* ── DOM refs ── */
+    const hospitalSel   = document.getElementById('hospital_id');
+    const deptSel       = document.getElementById('department_id');
+    const doctorSel     = document.getElementById('doctor_id');
+    const dateInput     = document.getElementById('date');
+    const slotsSection  = document.getElementById('slotsSection');
+    const slotsContainer= document.getElementById('slotsContainer');
+    const timeSlotInput = document.getElementById('time_slot');
+    const submitBtn     = document.getElementById('submitBtn');
+    const feeCard       = document.getElementById('feeCard');
+    const feeAmount     = document.getElementById('feeAmount');
+    const doctorInfoCard= document.getElementById('doctorInfoCard');
+    const docInfoName   = document.getElementById('docInfoName');
+    const docMeta       = document.getElementById('docMeta');
+
+    /* Set min date to today */
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.setAttribute('min', today);
+
+    /* ── Hospital change → populate departments ── */
+    hospitalSel.addEventListener('change', function() {
+        const hId = parseInt(this.value);
+        /* Find unique specialties for doctors at this hospital */
+        const specs = [...new Set(
+            allDoctors.filter(d => d.hospital_id === hId).map(d => d.specialty)
+        )];
+        /* Also include all departments (user may want to browse) */
+        deptSel.innerHTML = '<option value="" disabled selected>Choose a department...</option>';
+        if (specs.length === 0) {
+            deptSel.innerHTML += '<option value="" disabled>No departments available</option>';
+        } else {
+            specs.forEach(s => {
+                deptSel.innerHTML += `<option value="${s}">${s}</option>`;
+            });
+        }
+        deptSel.disabled = false;
+        /* Reset downstream */
+        resetDoctor();
+        resetSlots();
+    });
+
+    /* ── Department change → populate doctors ── */
+    deptSel.addEventListener('change', function() {
+        const hId = parseInt(hospitalSel.value);
+        const spec = this.value;
+        const filtered = allDoctors.filter(d => d.hospital_id === hId && d.specialty === spec);
+        doctorSel.innerHTML = '<option value="" disabled selected>Choose a doctor...</option>';
+        if (filtered.length === 0) {
+            doctorSel.innerHTML += '<option value="" disabled>No doctors found</option>';
+        } else {
+            filtered.forEach(d => {
+                doctorSel.innerHTML += `<option value="${d.id}">${d.name}</option>`;
+            });
+        }
+        doctorSel.disabled = false;
+        resetDoctorInfo();
+        resetSlots();
+    });
+
+    /* ── Doctor change → show info card & enable date ── */
+    doctorSel.addEventListener('change', function() {
+        const dId = parseInt(this.value);
+        const doc = allDoctors.find(d => d.id === dId);
+        if (!doc) return;
+
+        /* Info card */
+        docInfoName.textContent = doc.name;
+        const todayDay = new Date().toLocaleDateString('en-US', {weekday:'long'});
+        const isAvailToday = doc.schedule_days.includes(todayDay);
+
+        docMeta.innerHTML = `
+            <span class="badge"><i class="fa-solid fa-stethoscope"></i> ${doc.specialty}</span>
+            <span class="badge"><i class="fa-solid fa-door-open"></i> Room ${doc.room}</span>
+            <span class="badge"><i class="fa-solid fa-briefcase-medical"></i> ${doc.experience} yrs exp</span>
+            <span class="badge"><i class="fa-solid fa-star"></i> ${doc.rating.toFixed(1)}</span>
+            <span class="badge"><i class="fa-solid fa-clock"></i> ${doc.available_from} – ${doc.available_to}</span>
+            <span class="badge ${isAvailToday ? 'badge-available' : 'badge-unavailable'}">
+                <i class="fa-solid fa-${isAvailToday ? 'check-circle' : 'times-circle'}"></i>
+                ${isAvailToday ? 'Available Today' : 'Not Available Today'}
+            </span>
+            <span class="badge"><i class="fa-solid fa-calendar-days"></i> ${doc.schedule_days.join(', ') || 'No schedule'}</span>
+        `;
+        doctorInfoCard.classList.add('show');
+
+        /* Fee */
+        feeAmount.textContent = doc.fee.toFixed(2);
+        feeCard.classList.add('show');
+
+        /* Enable date */
+        dateInput.disabled = false;
+        resetSlots();
+    });
+
+    /* ── Date change → fetch slots ── */
+    dateInput.addEventListener('change', function() {
+        const doctorId = doctorSel.value;
+        const dateVal  = this.value;
+        if (!doctorId || !dateVal) return;
+        fetchSlots(doctorId, dateVal);
+    });
+
+    function fetchSlots(doctorId, dateVal) {
+        slotsSection.classList.add('show');
+        slotsContainer.innerHTML = '<div class="slot-spinner"><i class="fa-solid fa-spinner"></i> Loading slots...</div>';
+        timeSlotInput.value = '';
+        submitBtn.disabled = true;
+
+        const fd = new FormData();
+        fd.append('doctor_id', doctorId);
+        fd.append('date', dateVal);
+
+        fetch('/appointments/slots', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(data => {
+                if (!data.slots || data.slots.length === 0) {
+                    slotsContainer.innerHTML = '<div class="slots-empty"><i class="fa-regular fa-calendar-xmark"></i> No available slots for this date.</div>';
+                    return;
+                }
+                let html = '<div class="slots-grid">';
+                data.slots.forEach(s => {
+                    html += `<button type="button" class="slot-btn" data-slot="${s}">${s}</button>`;
+                });
+                html += '</div>';
+                slotsContainer.innerHTML = html;
+
+                /* Attach click handlers */
+                slotsContainer.querySelectorAll('.slot-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        slotsContainer.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
+                        this.classList.add('selected');
+                        timeSlotInput.value = this.dataset.slot;
+                        submitBtn.disabled = false;
+                    });
+                });
+            })
+            .catch(() => {
+                slotsContainer.innerHTML = '<div class="slots-empty"><i class="fa-solid fa-triangle-exclamation"></i> Failed to load slots. Try again.</div>';
+            });
+    }
+
+    /* ── Helpers ── */
+    function resetDoctor() {
+        doctorSel.innerHTML = '<option value="" disabled selected>Select department first...</option>';
+        doctorSel.disabled = true;
+        resetDoctorInfo();
+    }
+    function resetDoctorInfo() {
+        doctorInfoCard.classList.remove('show');
+        feeCard.classList.remove('show');
+        dateInput.disabled = true;
+        dateInput.value = '';
+        resetSlots();
+    }
+    function resetSlots() {
+        slotsSection.classList.remove('show');
+        slotsContainer.innerHTML = '';
+        timeSlotInput.value = '';
+        submitBtn.disabled = true;
+    }
+})();
+</script>
+{% endblock %}

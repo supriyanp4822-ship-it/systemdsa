@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+
+{% block title %}Hospital Queue Management System - Intelligent Queue Management System{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero">
+    <div class="hero-content reveal">
+        <h1>Smart Healthcare, <br><span>Zero Waiting Stress</span></h1>
+        <p>Book appointments, pay securely, and track your queue position in real-time with AI-powered wait time predictions.</p>
+        <div class="hero-actions">
+            {% if current_user.is_authenticated %}
+                <a href="/dashboard" class="btn btn-primary btn-lg">View Dashboard</a>
+            {% else %}
+                <a href="/auth/register" class="btn btn-primary btn-lg">Get Started</a>
+                <a href="/queue" class="btn btn-outline-white btn-lg">Live Queue Board</a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<!-- ===========================
+     Hospital Statistics Section
+=========================== -->
+<section class="stats">
+    <div class="section-title reveal">
+        <h2>Hospital Statistics</h2>
+        <p>Trusted healthcare services with outstanding patient care.</p>
+    </div>
+
+    <div class="stats-container">
+        <div class="stat-card reveal">
+            <i class="fa-solid fa-user-doctor"></i>
+            <h1 class="animate-counter" data-target="120" data-suffix="+">0+</h1>
+            <p>Experienced Doctors</p>
+        </div>
+
+        <div class="stat-card reveal">
+            <i class="fa-solid fa-users"></i>
+            <h1 class="animate-counter" data-target="25000" data-suffix="+">0+</h1>
+            <p>Happy Patients</p>
+        </div>
+
+        <div class="stat-card reveal">
+            <i class="fa-solid fa-bed-pulse"></i>
+            <h1 class="animate-counter" data-target="350" data-suffix="+">0+</h1>
+            <p>Hospital Beds</p>
+        </div>
+
+        <div class="stat-card reveal">
+            <i class="fa-solid fa-heart-pulse"></i>
+            <h1 class="animate-counter" data-target="15" data-suffix="+">0+</h1>
+            <p>Years of Experience</p>
+        </div>
+    </div>
+</section>
+
+<!-- ===========================
+     Departments Section
+=========================== -->
+<section class="departments">
+    <div class="section-title reveal">
+        <h2>Our Specialities</h2>
+        <p>Quality treatment across multiple dedicated departments.</p>
+    </div>
+
+    <div class="department-container">
+        <div class="department-card reveal">
+            <i class="fa-solid fa-heart-pulse"></i>
+            <h3>Cardiology</h3>
+            <p>Comprehensive heart care, diagnostic testing, and customized treatment plans.</p>
+        </div>
+
+        <div class="department-card reveal">
+            <i class="fa-solid fa-brain"></i>
+            <h3>Neurology</h3>
+            <p>Expert diagnostic evaluation and therapeutic options for nervous system disorders.</p>
+        </div>
+
+        <div class="department-card reveal">
+            <i class="fa-solid fa-bone"></i>
+            <h3>Orthopedics</h3>
+            <p>Advanced surgical and non-surgical procedures for joints, bones, and muscles.</p>
+        </div>
+
+        <div class="department-card reveal">
+            <i class="fa-solid fa-baby"></i>
+            <h3>Pediatrics</h3>
+            <p>Compassionate healthcare, immunizations, and wellness tracking for children.</p>
+        </div>
+    </div>
+</section>
+
+<!-- ===========================
+     Doctors Section
+=========================== -->
+<section class="doctors">
+    <div class="section-title reveal">
+        <h2>Meet Our Doctors</h2>
+        <p>Experienced specialists dedicated to your health.</p>
+    </div>
+
+    <div class="doctor-container">
+        {% for doc in doctors %}
+            <div class="doctor-card reveal">
+                <!-- Using corresponding seed images from static/images -->
+                {% if doc.username == 'drsmith' %}
+                    <img src="{{ url_for('static', filename='images/doctor1.jpg') }}" alt="{{ doc.name }}">
+                {% elif doc.username == 'drwilson' %}
+                    <img src="{{ url_for('static', filename='images/doctor2.jpg') }}" alt="{{ doc.name }}">
+                {% elif doc.username == 'drlee' %}
+                    <img src="{{ url_for('static', filename='images/doctor3.jpg') }}" alt="{{ doc.name }}">
+                {% elif doc.username == 'drdavis' %}
+                    <img src="{{ url_for('static', filename='images/doctor4.jpg') }}" alt="{{ doc.name }}">
+                {% else %}
+                    <!-- Default fallback avatar -->
+                    <img src="{{ url_for('static', filename='images/doctor1.jpg') }}" alt="{{ doc.name }}">
+                {% endif %}
+                <h3>{{ doc.name }}</h3>
+                <span>{{ doc.doctor_profile.specialty if doc.doctor_profile else 'Specialist' }}</span>
+
+                <div class="stars">
+                    ★★★★★
+                </div>
+                
+                <p class="fee">Fee: ₹{{ doc.doctor_profile.consultation_fee if doc.doctor_profile else '300' }}</p>
+
+                <a href="/appointments" class="btn btn-primary" style="display:inline-block; margin-bottom: 25px;">Book Appointment</a>
+            </div>
+        {% else %}
+            <p class="no-data">No doctors currently available.</p>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- ================= AI Features ================= -->
+<section class="ai-section reveal">
+    <div class="ai-left">
+        <h2>AI Powered Queue Prediction</h2>
+        <p>
+            Our intelligent queue management system predicts patient waiting times using Machine Learning, helping reduce hospital crowding and keeping you informed.
+        </p>
+
+        <div class="ai-list">
+            <div class="ai-item">
+                <i class="fa-solid fa-robot"></i>
+                AI Waiting Time Prediction
+            </div>
+
+            <div class="ai-item">
+                <i class="fa-solid fa-chart-line"></i>
+                Live Queue Analytics
+            </div>
+
+            <div class="ai-item">
+                <i class="fa-solid fa-calendar-check"></i>
+                Smart Appointment Scheduling
+            </div>
+
+            <div class="ai-item">
+                <i class="fa-solid fa-bolt"></i>
+                Emergency Patient Priority
+            </div>
+        </div>
+    </div>
+
+    <div class="ai-right">
+        <!-- SVG illustration representing AI healthcare metrics as fallback for ai.png -->
+        <div class="ai-illustration">
+            <div class="chart-mockup">
+                <div class="bar bar-1"></div>
+                <div class="bar bar-2"></div>
+                <div class="bar bar-3"></div>
+                <div class="bar bar-4"></div>
+            </div>
+            <div class="status-indicator">
+                <i class="fa-solid fa-brain-circuit"></i>
+                <span>Queue Predictor Active</span>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

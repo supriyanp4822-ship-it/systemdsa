@@ -1,0 +1,58 @@
+{% extends 'admin/base.html' %}
+
+{% block content %}
+<div class="admin-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3><i class="fa-solid fa-calendar-check"></i> Appointment Management</h3>
+        <div style="display: flex; gap: 10px;">
+            <a href="{{ url_for('admin.appointments', status='all') }}" class="btn btn-xs {{ 'btn-secondary' if current_filter == 'all' else 'btn-outline' }}">All</a>
+            <a href="{{ url_for('admin.appointments', status='scheduled') }}" class="btn btn-xs {{ 'btn-secondary' if current_filter == 'scheduled' else 'btn-outline' }}">Scheduled</a>
+            <a href="{{ url_for('admin.appointments', status='paid') }}" class="btn btn-xs {{ 'btn-secondary' if current_filter == 'paid' else 'btn-outline' }}">Paid</a>
+            <a href="{{ url_for('admin.appointments', status='completed') }}" class="btn btn-xs {{ 'btn-secondary' if current_filter == 'completed' else 'btn-outline' }}">Completed</a>
+            <a href="{{ url_for('admin.appointments', status='cancelled') }}" class="btn btn-xs {{ 'btn-secondary' if current_filter == 'cancelled' else 'btn-outline' }}">Cancelled</a>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Patient</th>
+                    <th>Doctor</th>
+                    <th>Date</th>
+                    <th>Slot</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for appt in appointments %}
+                <tr>
+                    <td>#{{ appt.id }}</td>
+                    <td><strong>{{ appt.patient.name }}</strong></td>
+                    <td>{{ appt.doctor.name }}</td>
+                    <td>{{ appt.date.strftime('%Y-%m-%d') }}</td>
+                    <td>{{ appt.time_slot }}</td>
+                    <td>
+                        <span class="badge badge-{{ 'success' if appt.status == 'completed' else 'primary' if appt.status == 'paid' else 'info' if appt.status == 'scheduled' else 'danger' }}">
+                            {{ appt.status | title }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if appt.status != 'completed' and appt.status != 'cancelled' %}
+                        <form action="{{ url_for('admin.update_appointment', appt_id=appt.id, status='completed') }}" method="POST" style="display:inline;">
+                            <button type="submit" class="btn btn-xs" style="color: #10b981;" title="Mark Completed"><i class="fa-solid fa-check"></i></button>
+                        </form>
+                        <form action="{{ url_for('admin.update_appointment', appt_id=appt.id, status='cancelled') }}" method="POST" style="display:inline;">
+                            <button type="submit" class="btn btn-xs" style="color: #ef4444;" title="Cancel"><i class="fa-solid fa-xmark"></i></button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

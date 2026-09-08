@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+
+{% block title %}Hospital Queue Management System - Sign Up{% endblock %}
+
+{% block content %}
+<section class="auth-section">
+    <div class="auth-container reveal">
+        <!-- Benefits Sidebar -->
+        <div class="why-content">
+            <h2>Join Our Platform</h2>
+            <p>Create an account to skip the long waiting times and experience a seamless check-in workflow.</p>
+            
+            <div class="registration-perks">
+                <div class="perk-item">
+                    <i class="fa-solid fa-bolt"></i>
+                    <div>
+                        <h4>Instant Check-in</h4>
+                        <p>Generate a queue position as soon as you arrive, directly from your dashboard.</p>
+                    </div>
+                </div>
+                
+                <div class="perk-item">
+                    <i class="fa-solid fa-chart-simple"></i>
+                    <div>
+                        <h4>Live Queue View</h4>
+                        <p>Monitor your doctor's queue status in real-time on any device.</p>
+                    </div>
+                </div>
+
+                <div class="perk-item">
+                    <i class="fa-solid fa-robot"></i>
+                    <div>
+                        <h4>AI Predictor</h4>
+                        <p>Receive accurate, machine-learning-based waiting time estimations.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Registration Form Card -->
+        <div class="auth-form-card">
+            <h2>Create Account</h2>
+            <p class="subtitle">Select your account type and fill in your details.</p>
+            
+            <form method="POST" action="/auth/register">
+                <div class="form-group">
+                    <label for="role"><i class="fa-solid fa-id-card"></i> Account Type</label>
+                    <select id="role" name="role" class="form-control" onchange="toggleDoctorFields()">
+                        <option value="patient">Patient</option>
+                        <option value="doctor">Doctor / Practitioner</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="name"><i class="fa-regular fa-user"></i> Full Name</label>
+                    <input type="text" id="name" name="name" class="form-control" placeholder="Enter full name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="email"><i class="fa-regular fa-envelope"></i> Email Address</label>
+                    <input type="email" id="email" name="email" class="form-control" placeholder="Enter email address" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="username"><i class="fa-solid fa-user-tag"></i> Username</label>
+                    <input type="text" id="username" name="username" class="form-control" placeholder="Choose a username" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password"><i class="fa-solid fa-lock"></i> Password</label>
+                    <input type="password" id="password" name="password" class="form-control" placeholder="Create password" required>
+                </div>
+
+                <!-- Dynamic Doctor Fields -->
+                <div id="doctorFields" style="display: none; border-top: 1px solid #cbd5e1; padding-top: 15px; margin-top: 15px;">
+                    <h4 style="margin-bottom: 15px; color: #0d3b66;">Doctor Profile Details</h4>
+                    
+                    <div class="form-group">
+                        <label for="specialty"><i class="fa-solid fa-stethoscope"></i> Medical Specialty</label>
+                        <select id="specialty" name="specialty" class="form-control">
+                            <option value="Cardiologist">Cardiologist</option>
+                            <option value="Neurologist">Neurologist</option>
+                            <option value="Orthopedic">Orthopedic</option>
+                            <option value="Pediatrician">Pediatrician</option>
+                            <option value="General Physician">General Physician</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="experience"><i class="fa-solid fa-award"></i> Years of Experience</label>
+                        <input type="number" id="experience" name="experience" class="form-control" placeholder="e.g. 10" min="1" max="50" value="5">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="consultation_fee"><i class="fa-solid fa-indian-rupee-sign"></i> Consultation Fee (₹)</label>
+                        <input type="number" id="consultation_fee" name="consultation_fee" class="form-control" placeholder="e.g. 500" min="0" value="300">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block" style="margin-top: 20px;">Sign Up</button>
+            </form>
+            
+            <p class="auth-footer">Already have an account? <a href="/auth/login">Log In here</a></p>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function toggleDoctorFields() {
+        const roleSelect = document.getElementById('role');
+        const doctorFields = document.getElementById('doctorFields');
+        const specialty = document.getElementById('specialty');
+        const experience = document.getElementById('experience');
+        const consultationFee = document.getElementById('consultation_fee');
+        
+        if (roleSelect.value === 'doctor') {
+            doctorFields.style.display = 'block';
+            specialty.required = true;
+            experience.required = true;
+            consultationFee.required = true;
+        } else {
+            doctorFields.style.display = 'none';
+            specialty.required = false;
+            experience.required = false;
+            consultationFee.required = false;
+        }
+    }
+</script>
+{% endblock %}

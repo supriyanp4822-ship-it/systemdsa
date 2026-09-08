@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+
+{% block title %}Location & Queue Dashboard - Hospital Queue Management{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/location_dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="location-section">
+  <div class="loc-header reveal">
+    <div class="loc-title-group">
+      <i class="fa-solid fa-map-location-dot loc-icon"></i>
+      <div>
+        <h2>Tamil Nadu Health Trace</h2>
+        <p>Real-time Medical Directory · 38 Districts · AI Queue Predictions</p>
+      </div>
+    </div>
+
+    <div class="loc-legend">
+      <span class="legend-item"><span class="legend-dot hospital"></span>Hospital</span>
+      <span class="legend-item"><span class="legend-dot doctor"></span>Doctor</span>
+      <span class="legend-item"><span class="legend-dot trace"></span>Route</span>
+    </div>
+  </div>
+
+  <div class="loc-body">
+    <!-- LEFT: Explorer Panel (Hospitals, Doctors, Queue) -->
+    <div class="explorer-panel reveal">
+      <div class="panel-tabs">
+        <button class="tab-btn active" data-tab="hospitals">
+            <i class="fa-solid fa-hospital"></i> Hospitals
+        </button>
+        <button class="tab-btn" data-tab="queue">
+            <i class="fa-solid fa-list-ol"></i> Live Queue
+        </button>
+      </div>
+
+      <div class="tab-content" id="hospitalsTab">
+        <div class="panel-filters">
+            <div class="filter-row">
+                <select id="districtFilter" class="form-select">
+                    <option value="all">All TN Districts</option>
+                    {% for dist in districts %}
+                        <option value="{{ dist.id }}">{{ dist.name }}</option>
+                    {% endfor %}
+                </select>
+                <button id="btnClearDistrict" class="btn btn-xs btn-outline" title="Clear District">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="panel-search">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="hospitalSearch" placeholder="Search hospital name or dept…" />
+            </div>
+            <div id="hospitalCount" class="results-count">0 Hospitals Found</div>
+            <div id="debugPanel" class="debug-panel hidden">
+                <!-- Dev debug info -->
+            </div>
+        </div>
+        <div class="explorer-list" id="hospitalList">
+            <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <div class="tab-content hidden" id="doctorsTab">
+        <div class="panel-header-sub">
+            <button id="btnBackToHospitals" class="btn btn-xs btn-outline">
+                <i class="fa-solid fa-arrow-left"></i> Back
+            </button>
+            <h4 id="selectedHospitalName">Hospital Name</h4>
+        </div>
+        <div class="panel-search">
+            <select id="deptFilter" class="form-select sm">
+                <option value="all">All Departments</option>
+            </select>
+        </div>
+        <div class="explorer-list" id="doctorList">
+            <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <div class="tab-content hidden" id="queueTab">
+        <div class="token-search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="tokenSearch" placeholder="Search patient or token…" />
+        </div>
+        <div class="token-list" id="tokenList">
+            <!-- Populated by JS -->
+        </div>
+        <div class="token-summary" id="tokenSummary">
+            <div class="ts-item"><span id="totalWaiting">—</span><label>Waiting</label></div>
+            <div class="ts-item"><span id="totalConsulting">—</span><label>Consulting</label></div>
+            <div class="ts-item"><span id="totalDoctors">—</span><label>Doctors</label></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Map + Trace Center -->
+    <div class="map-wrapper reveal">
+
+      <!-- Map Search Bar -->
+      <div class="map-search-bar">
+        <div class="map-search-input-wrap">
+          <i class="fa-solid fa-magnifying-glass map-search-icon"></i>
+          <input type="text" id="mapSearch" placeholder="Search doctor, specialty or hospital…" autocomplete="off" />
+          <button id="mapSearchClear" class="map-search-clear" title="Clear search">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div id="mapSearchResults" class="map-search-results hidden"></div>
+      </div>
+
+      <div class="map-toolbar">
+        <button id="btnTraceAll" class="map-btn active" title="Show all locations">
+          <i class="fa-solid fa-location-dot"></i> Show All
+        </button>
+        <button id="btnTraceRoute" class="map-btn" title="Trace route Hospital → Doctors">
+          <i class="fa-solid fa-route"></i> Trace Routes
+        </button>
+        <button id="btnClearTrace" class="map-btn" title="Clear trace lines">
+          <i class="fa-solid fa-eraser"></i> Clear Traces
+        </button>
+        <button id="btnFitBounds" class="map-btn" title="Fit all markers">
+          <i class="fa-solid fa-compress-arrows-alt"></i> Fit View
+        </button>
+      </div>
+      <div id="map" class="map-container"></div>
+      <div class="map-coords" id="mapCoords">
+        <i class="fa-solid fa-crosshairs"></i>
+        <span id="coordText">Hover over map to see coordinates</span>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="{{ url_for('static', filename='js/location_map.js') }}"></script>
+{% endblock %}

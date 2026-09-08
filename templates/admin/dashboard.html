@@ -1,0 +1,84 @@
+{% extends 'admin/base.html' %}
+
+{% block content %}
+<div class="db-welcome">
+    <h2>Admin Dashboard Overview</h2>
+    <p>Welcome back, {{ current_user.name }}. Here is what is happening today.</p>
+</div>
+
+<div class="stat-grid">
+    <div class="stat-box" style="border-left-color: #3b82f6;">
+        <div class="stat-icon" style="color: #3b82f6; background: rgba(59,130,246,0.1);"><i class="fa-solid fa-users"></i></div>
+        <div class="stat-data">
+            <h3>{{ total_patients }}</h3>
+            <p>Total Patients</p>
+        </div>
+    </div>
+    <div class="stat-box" style="border-left-color: #10b981;">
+        <div class="stat-icon" style="color: #10b981; background: rgba(16,185,129,0.1);"><i class="fa-solid fa-calendar-day"></i></div>
+        <div class="stat-data">
+            <h3>{{ today_appts }}</h3>
+            <p>Today's Appointments</p>
+        </div>
+    </div>
+    <div class="stat-box" style="border-left-color: #f59e0b;">
+        <div class="stat-icon" style="color: #f59e0b; background: rgba(245,158,11,0.1);"><i class="fa-solid fa-clock"></i></div>
+        <div class="stat-data">
+            <h3>{{ waiting_patients }}</h3>
+            <p>Waiting Patients</p>
+        </div>
+    </div>
+    <div class="stat-box" style="border-left-color: #ef4444;">
+        <div class="stat-icon" style="color: #ef4444; background: rgba(239,68,68,0.1);"><i class="fa-solid fa-check-circle"></i></div>
+        <div class="stat-data">
+            <h3>{{ completed_today }}</h3>
+            <p>Completed Today</p>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 30px;">
+    <div class="admin-card">
+        <h3><i class="fa-solid fa-clock-rotate-left"></i> Recent Appointments</h3>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Patient</th>
+                        <th>Doctor</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for appt in recent_appts %}
+                    <tr>
+                        <td>{{ appt.patient.name }}</td>
+                        <td>{{ appt.doctor.name }}</td>
+                        <td>{{ appt.time_slot }}</td>
+                        <td><span class="badge badge-{{ 'success' if appt.status == 'completed' else 'primary' }}">{{ appt.status }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="admin-card">
+        <h3><i class="fa-solid fa-chart-pie"></i> Waiting by Dept</h3>
+        <div style="margin-top: 20px;">
+            {% for dept in dept_stats %}
+            <div style="margin-bottom: 15px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; font-weight: 600;">
+                    <span>{{ dept.name }}</span>
+                    <span>{{ dept.waiting }} patients</span>
+                </div>
+                <div style="height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
+                    <div style="width: {{ [dept.waiting * 10, 100]|min }}%; height: 100%; background: #3b82f6;"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

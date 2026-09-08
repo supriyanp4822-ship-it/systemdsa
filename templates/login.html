@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}Hospital Queue Management System - Login{% endblock %}
+
+{% block content %}
+<section class="auth-section">
+    <div class="auth-container reveal">
+        <!-- Why Choose Us Side (Left) -->
+        <div class="why-content">
+            <h2>Why Choose Our Hospital?</h2>
+            <p>
+                We provide smart healthcare services with AI-powered queue management,
+                online appointments, secure payments, and experienced doctors.
+            </p>
+            
+            <div class="features">
+                <div class="feature">
+                    <i class="fa-solid fa-user-doctor"></i>
+                    <span>Experienced Doctors</span>
+                </div>
+
+                <div class="feature">
+                    <i class="fa-solid fa-clock"></i>
+                    <span>Live Queue Tracking</span>
+                </div>
+
+                <div class="feature">
+                    <i class="fa-solid fa-brain"></i>
+                    <span>AI Waiting Time Prediction</span>
+                </div>
+
+                <div class="feature">
+                    <i class="fa-solid fa-credit-card"></i>
+                    <span>Secure Online Payment</span>
+                </div>
+
+                <div class="feature">
+                    <i class="fa-solid fa-calendar-check"></i>
+                    <span>Easy Appointment Booking</span>
+                </div>
+
+                <div class="feature">
+                    <i class="fa-solid fa-shield-heart"></i>
+                    <span>24×7 Emergency Support</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Login Form Side (Right) -->
+        <div class="auth-form-card">
+            <h2>Welcome Back</h2>
+            <p class="subtitle">Log in to manage your appointments and queue status.</p>
+            
+            <form method="POST" action="/auth/login">
+                <div class="form-group">
+                    <label for="identifier"><i class="fa-regular fa-user"></i> Username or Email</label>
+                    <input type="text" id="identifier" name="identifier" class="form-control" placeholder="Enter username or email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password"><i class="fa-solid fa-lock"></i> Password</label>
+                    <input type="password" id="password" name="password" class="form-control" placeholder="Enter password" required>
+                </div>
+
+                <div class="form-actions">
+                    <label class="checkbox-container">
+                        <input type="checkbox" name="remember" id="remember">
+                        <span class="checkmark"></span>
+                        Remember Me
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">Log In</button>
+            </form>
+            
+            <p class="auth-footer">Don't have an account? <a href="/auth/register">Sign Up here</a></p>
+            <div class="test-accounts">
+                <p><strong>Demo Accounts (Password: <code>patient123</code> / <code>doctor123</code> / <code>admin123</code>):</strong></p>
+                <ul>
+                    <li>Patient: <code>patient</code></li>
+                    <li>Doctor: <code>drsmith</code> (Cardiology)</li>
+                    <li>Admin: <code>admin</code></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

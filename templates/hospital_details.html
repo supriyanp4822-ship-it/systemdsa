@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ hospital.name }} - Details{% endblock %}
+
+{% block content %}
+<section class="dashboard-section">
+    <div class="dashboard-container">
+        <div class="db-welcome reveal">
+            <h2><i class="fa-solid fa-hospital" style="color:var(--primary);"></i> {{ hospital.name }}</h2>
+            <p>{{ hospital.city }} · {{ hospital.address }}</p>
+        </div>
+
+        <div class="db-grid">
+            <div class="db-card reveal">
+                <h3><i class="fa-solid fa-circle-info"></i> Hospital Overview</h3>
+                <div class="profile-details">
+                    <div class="detail-row">
+                        <span class="label">Status:</span>
+                        <span class="value">
+                            <span class="badge badge-{{ 'success' if is_open else 'danger' }}">
+                                {{ 'OPEN NOW' if is_open else 'CLOSED' }}
+                            </span>
+                        </span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">Operating Hours:</span>
+                        <span class="value">{{ hospital.opening_time }} - {{ hospital.closing_time }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">Total Doctors:</span>
+                        <span class="value">{{ doctor_count }} Active</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">Location:</span>
+                        <span class="value">{{ hospital.address }}</span>
+                    </div>
+                </div>
+
+                <div style="margin-top: 30px;">
+                    <a href="{{ url_for('dash.hospital_doctors', hospital_id=hospital.id) }}" class="btn btn-primary btn-block">
+                        <i class="fa-solid fa-user-doctor"></i> View Available Doctors
+                    </a>
+                </div>
+            </div>
+
+            <div class="db-card reveal">
+                <h3><i class="fa-solid fa-building-user"></i> Specialized Departments</h3>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px;">
+                    {% for dept in departments %}
+                        <span class="badge badge-info" style="padding: 8px 15px; font-size: 0.9rem;">
+                            {{ dept }}
+                        </span>
+                    {% else %}
+                        <p class="text-muted">No specific departments listed.</p>
+                    {% endfor %}
+                </div>
+
+                <div style="margin-top: 40px; padding: 20px; background: var(--primary-light); border-radius: 12px; border: 1.5px dashed var(--primary);">
+                    <h4 style="color: var(--secondary); margin-bottom: 10px;"><i class="fa-solid fa-route"></i> Directions</h4>
+                    <p style="font-size: 0.9rem; color: var(--slate-700);">Latitude: {{ hospital.latitude }}</p>
+                    <p style="font-size: 0.9rem; color: var(--slate-700);">Longitude: {{ hospital.longitude }}</p>
+                    <a href="https://www.google.com/maps?q={{ hospital.latitude }},{{ hospital.longitude }}" target="_blank" class="btn btn-outline btn-sm btn-block" style="margin-top: 15px; background: white;">
+                        Open in Google Maps
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: 30px;">
+            <a href="/dashboard/location-dashboard" class="btn btn-secondary btn-sm"><i class="fa-solid fa-arrow-left"></i> Back to Map</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

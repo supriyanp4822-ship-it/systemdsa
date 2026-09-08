@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Payment History - Hospital QueueMS{% endblock %}
+
+{% block content %}
+<section class="dashboard-section">
+    <div class="dashboard-container">
+        <div class="db-welcome reveal">
+            <h2><i class="fa-solid fa-clock-rotate-left"></i> Payment History</h2>
+            <p>View all your past consultation payments and download receipts.</p>
+        </div>
+
+        <div class="db-card reveal">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Receipt No</th>
+                            <th>Doctor</th>
+                            <th>Date</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pay in payments %}
+                        <tr>
+                            <td><strong>{{ pay.receipt_no }}</strong></td>
+                            <td>{{ pay.doctor.name }}</td>
+                            <td>{{ pay.payment_date.strftime('%d %b %Y') }}</td>
+                            <td>₹{{ pay.amount }}</td>
+                            <td><span class="badge badge-info">{{ pay.payment_method }}</span></td>
+                            <td>
+                                <a href="{{ url_for('pay.receipt', payment_id=pay.id) }}" class="btn btn-xs btn-outline">
+                                    <i class="fa-solid fa-file-invoice"></i> View Receipt
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: #94a3b8; padding: 40px;">No payment records found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <a href="/dashboard" class="btn btn-secondary btn-sm"><i class="fa-solid fa-arrow-left"></i> Back to Dashboard</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

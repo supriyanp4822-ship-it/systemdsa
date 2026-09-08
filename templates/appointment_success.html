@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block title %}Hospital Queue Management System - Appointment Confirmed{% endblock %}
+
+{% block head %}
+<style>
+    .success-page { padding: 100px 20px 60px; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .success-card {
+        max-width: 580px; width: 100%; background: #fff; border-radius: 24px;
+        box-shadow: 0 12px 48px rgba(13,59,102,.12); overflow: hidden;
+        animation: popIn .5s cubic-bezier(.34,1.56,.64,1);
+    }
+    .success-header {
+        background: linear-gradient(135deg, #0d3b66 0%, #1a5276 50%, #15803d 100%);
+        padding: 40px 36px 30px; text-align: center; color: #fff;
+    }
+    .success-icon {
+        width: 72px; height: 72px; border-radius: 50%;
+        background: rgba(255,255,255,.2); backdrop-filter: blur(6px);
+        display: flex; align-items: center; justify-content: center;
+        margin: 0 auto 16px; font-size: 2rem;
+        animation: checkPop .6s .3s both;
+    }
+    .success-header h2 { margin: 0 0 6px; font-size: 1.5rem; font-weight: 700; }
+    .success-header p  { margin: 0; opacity: .85; font-size: .92rem; }
+
+    .success-body { padding: 32px 36px; }
+    .appt-id-strip {
+        text-align: center; margin-bottom: 28px;
+        background: linear-gradient(135deg,#f0f9ff,#e0f2fe);
+        border-radius: 14px; padding: 18px;
+        border: 1px solid #bae6fd;
+    }
+    .appt-id-strip span { display: block; font-size: .82rem; color: #64748b; margin-bottom: 4px; }
+    .appt-id-strip strong { font-size: 1.6rem; color: #0c4a6e; letter-spacing: 2px; }
+
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; }
+    .detail-item {
+        background: #f8fafc; border-radius: 12px; padding: 16px;
+        border: 1px solid #e2e8f0;
+    }
+    .detail-item .label { display: block; font-size: .78rem; color: #94a3b8; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+    .detail-item .value { font-size: 1rem; font-weight: 600; color: #1e293b; }
+    .detail-item .value i { margin-right: 6px; color: #1a5276; }
+
+    .success-actions { display: flex; gap: 12px; }
+    .success-actions a {
+        flex: 1; padding: 14px; border-radius: 12px; text-align: center;
+        font-weight: 600; font-size: .95rem; text-decoration: none;
+        transition: transform .15s, box-shadow .2s;
+    }
+    .success-actions a:hover { transform: translateY(-1px); }
+    .btn-dashboard {
+        background: linear-gradient(135deg,#0d3b66,#1a5276); color: #fff;
+        box-shadow: 0 4px 16px rgba(13,59,102,.2);
+    }
+    .btn-new-appt {
+        background: #f1f5f9; color: #334155; border: 1.5px solid #cbd5e1;
+    }
+
+    @keyframes popIn { from { opacity:0; transform: scale(.9) translateY(20px); } to { opacity:1; transform: scale(1) translateY(0); } }
+    @keyframes checkPop { from { transform: scale(0); } to { transform: scale(1); } }
+
+    @media (max-width: 500px) {
+        .detail-grid { grid-template-columns: 1fr; }
+        .success-actions { flex-direction: column; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="success-page">
+    <div class="success-card">
+        <div class="success-header">
+            <div class="success-icon"><i class="fa-solid fa-circle-check"></i></div>
+            <h2>Appointment Confirmed!</h2>
+            <p>Your booking has been secured successfully.</p>
+        </div>
+
+        <div class="success-body">
+            <div class="appt-id-strip">
+                <span>Appointment ID</span>
+                <strong>APPT-{{ '%05d' | format(appt.id) }}</strong>
+            </div>
+
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <span class="label">Hospital</span>
+                    <span class="value"><i class="fa-solid fa-hospital"></i> {{ hospital.name if hospital else 'N/A' }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="label">Department</span>
+                    <span class="value"><i class="fa-solid fa-building"></i> {{ department if department else 'N/A' }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="label">Doctor</span>
+                    <span class="value"><i class="fa-solid fa-user-doctor"></i> {{ doctor.name if doctor else 'N/A' }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="label">Date</span>
+                    <span class="value"><i class="fa-regular fa-calendar"></i> {{ appt.date.strftime('%d %b %Y') }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="label">Time Slot</span>
+                    <span class="value"><i class="fa-regular fa-clock"></i> {{ appt.time_slot }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="label">Status</span>
+                    <span class="value" style="color: #15803d;"><i class="fa-solid fa-check-circle"></i> {{ appt.status | capitalize }}</span>
+                </div>
+            </div>
+
+            <div class="success-actions">
+                <a href="/dashboard" class="btn-dashboard"><i class="fa-solid fa-gauge-high"></i> My Dashboard</a>
+                <a href="/appointments" class="btn-new-appt"><i class="fa-solid fa-plus"></i> New Appointment</a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

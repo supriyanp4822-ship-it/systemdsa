@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+
+{% block title %}Hospital Queue Management System - Live Queue Board{% endblock %}
+
+{% block content %}
+<section class="live-board-section">
+    <div class="live-board-container">
+
+        <!-- Live Board Header -->
+        <div class="board-header reveal">
+            <div class="board-title-group">
+                <div>
+                    <span class="live-indicator"><i class="fa-solid fa-circle fa-beat"></i> Live Board</span>
+                    <h2>Live Hospital Queue Board</h2>
+                    <p>Real-time queue tracking · AI-estimated wait times · Patient tokens</p>
+                </div>
+            </div>
+            <a href="/" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-house"></i> Home</a>
+        </div>
+
+        {% set total_waiting = namespace(count=0) %}
+        {% set total_consulting = namespace(count=0) %}
+        {% set total_wait_sum = namespace(val=0) %}
+        {% set doc_count = queue_data|length %}
+
+        {% for doc_id, doc in queue_data.items() %}
+            {% set total_waiting.count = total_waiting.count + doc.wait_count %}
+            {% if doc.current != 'None' %}{% set total_consulting.count = total_consulting.count + 1 %}{% endif %}
+            {% set total_wait_sum.val = total_wait_sum.val + doc.total_wait_time %}
+        {% endfor %}
+
+        {% set avg_wait = (total_wait_sum.val / doc_count)|round|int if doc_count > 0 else 0 %}
+
+        <!-- Summary Statistics Row -->
+        <div class="board-stats-row reveal">
+            <div class="board-stat-card waiting">
+                <i class="fa-solid fa-hourglass-half"></i>
+                <div class="stat-info">
+                    <h3>{{ total_waiting.count }}</h3>
+                    <p>Waiting Patients</p>
+                </div>
+            </div>
+            <div class="board-stat-card consulting">
+                <i class="fa-solid fa-user-doctor"></i>
+                <div class="stat-info">
+                    <h3>{{ total_consulting.count }}</h3>
+                    <p>Now Consulting</p>
+                </div>
+            </div>
+            <div class="board-stat-card doctors">
+                <i class="fa-solid fa-hospital-user"></i>
+                <div class="stat-info">
+                    <h3>{{ doc_count }}</h3>
+                    <p>Active Doctors</p>
+                </div>
+            </div>
+            <div class="board-stat-card wait-time">
+                <i class="fa-solid fa-clock"></i>
+                <div class="stat-info">
+                    <h3>{{ avg_wait }} <small>min</small></h3>
+                    <p>Avg. Room Wait</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Board Grid -->
+        <div class="board-grid reveal">
+            {% for doc_id, doc in queue_data.items() %}
+                <div class="board-card">
+                    <!-- Doctor Header -->
+                    <div class="doc-header-card">
+                        <div class="doc-avatar">
+                            <i class="fa-solid fa-stethoscope"></i>
+                        </div>
+                        <div class="doc-info">
+                            <h3>{{ doc.doctor_name }}</h3>
+                            <p>{{ doc.specialty }}</p>
+                        </div>
+                        <span class="doc-status-badge {% if doc.wait_count > 3 %}busy{% endif %}">
+                            {% if doc.wait_count > 3 %}Busy{% else %}Available{% endif %}
+                        </span>
+                    </div>
+
+                    <div class="board-card-body">
+                        <!-- NOW SERVING Section -->
+                        <div class="q-section">
+                            <span class="q-label"><i class="fa-solid fa-door-open"></i> Now Serving</span>
+                            {% if doc.current != 'None' %}
+                                <div class="serving-box">
+                                    <div class="serving-patient">
+                                        <div class="token-pill token-serving">
+                                            {{ doc.token_current if doc.token_current else '—' }}
+                                        </div>
+                                        <strong>{{ doc.current }}</strong>
+                                    </div>
+                                    <span class="badge badge-success"><i class="fa-solid fa-spinner fa-spin"></i> In Session</span>
+                                </div>
+                            {% else %}
+                                <div class="empty-msg">No active consultation...</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- WAITING Section -->
+                        <div class="q-section">
+                            <span class="q-label"><i class="fa-solid fa-list-ol"></i> Waiting Line ({{ doc.wait_count }})</span>
+                            {% if doc.waiting %}
+                                <div class="waiting-list">
+                                    {% for item in doc.waiting %}
+                                    <div class="waiting-row">
+                                        <div class="w-patient">
+                                            <div class="token-pill token-waiting">T{{ '%03d' % item.id }}</div>
+                                            <div class="w-info">
+                                                <span class="w-name">{{ item.name }}</span>
+                                                <span class="w-meta">Queue Position: #{{ item.position }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="w-wait">
+                                            <span class="w-time">~{{ item.wait_time }}m</span>
+                                            <span class="w-pos">Estimated</span>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="empty-msg">Queue is currently empty.</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- COMPLETED Section -->
+                        <div class="q-section">
+                            <span class="q-label"><i class="fa-solid fa-check-double"></i> Recently Completed</span>
+                            <div class="done-list">
+                                {% if doc.completed %}
+                                    {% for item in doc.completed %}
+                                        <span class="done-token" title="{{ item.name }}">T{{ '%03d' % item.id }}</span>
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="empty-msg" style="font-size: 0.75rem;">None today yet</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Queue Footer -->
+                        <div class="board-card-footer">
+                            <span><i class="fa-regular fa-clock"></i> Next Patient Est:</span>
+                            <strong class="wait-total">{{ doc.total_wait_time }} mins</strong>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fa-solid fa-hospital"></i>
+                    <p>No active doctor queues found.</p>
+                </div>
+            {% endfor %}
+        </div>
+
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Real-time poll for queue board updates
+    setInterval(() => {
+        fetch(window.location.href)
+            .then(response => {
+                if (response.ok) return response.text();
+                throw new Error('Network error polling queue board.');
+            })
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const selectors = ['.board-stats-row', '.board-grid'];
+                selectors.forEach(selector => {
+                    const newEl = doc.querySelector(selector);
+                    const currentEl = document.querySelector(selector);
+                    if (newEl && currentEl && currentEl.innerHTML !== newEl.innerHTML) {
+                        currentEl.innerHTML = newEl.innerHTML;
+                    }
+                });
+            })
+            .catch(error => console.error('Error polling queue board:', error));
+    }, 5000);
+</script>
+{% endblock %}

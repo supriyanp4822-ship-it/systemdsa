@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+
+{% block title %}Doctors at {{ hospital.name }}{% endblock %}
+
+{% block content %}
+<section class="dashboard-section">
+    <div class="dashboard-container">
+        <div class="db-welcome reveal">
+            <h2>Doctors at {{ hospital.name }}</h2>
+            <p>Select a department to filter or find your doctor below.</p>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="db-card reveal" style="margin-bottom: 30px; padding: 15px 30px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <i class="fa-solid fa-filter" style="color: var(--primary);"></i>
+                    <span style="font-weight: 700; color: var(--secondary);">Filter by Department:</span>
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <a href="{{ url_for('dash.hospital_doctors', hospital_id=hospital.id) }}"
+                       class="btn btn-xs {{ 'btn-primary' if not current_dept else 'btn-outline' }}">
+                        All Departments
+                    </a>
+                    {% for dept in departments %}
+                        <a href="{{ url_for('dash.hospital_doctors', hospital_id=hospital.id, department=dept) }}"
+                           class="btn btn-xs {{ 'btn-primary' if current_dept == dept else 'btn-outline' }}">
+                            {{ dept }}
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Doctor Grid -->
+        <div class="doctor-container">
+            {% for doc in doctors %}
+                <div class="doctor-card reveal">
+                    <div style="padding: 30px;">
+                        <div style="width: 80px; height: 80px; background: var(--primary-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; color: var(--primary); font-size: 2rem;">
+                            <i class="fa-solid fa-user-md"></i>
+                        </div>
+                        <h3 style="margin-top: 0;">{{ doc.user.name }}</h3>
+                        <span style="background: var(--slate-100); color: var(--secondary); padding: 4px 12px; border-radius: 50px; font-size: 0.8rem; font-weight: 700; margin-bottom: 10px; display: inline-block;">
+                            {{ doc.specialty }}
+                        </span>
+
+                        <div class="profile-details" style="margin-top: 15px; text-align: left;">
+                            <div class="detail-row">
+                                <span class="label">Room:</span>
+                                <span class="value">{{ doc.room_number or '—' }}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="label">Experience:</span>
+                                <span class="value">{{ doc.experience }} Yrs</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="label">Schedule:</span>
+                                <span class="value" style="font-size: 0.8rem;">
+                                    {% for sched in doc.schedules %}
+                                        {{ sched.day_of_week[:3] }}{% if not loop.last %}, {% endif %}
+                                    {% else %}
+                                        Not set
+                                    {% endfor %}
+                                </span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="label">Hours:</span>
+                                <span class="value">{{ doc.available_from }} - {{ doc.available_to }}</span>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 20px; border-top: 1px solid var(--slate-100); padding-top: 15px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                <span style="font-weight: 800; color: var(--primary); font-size: 1.1rem;">₹{{ doc.consultation_fee }}</span>
+                                <span class="badge badge-success">Available</span>
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <a href="{{ url_for('dash.doctor_profile', user_id=doc.user_id) }}" class="btn btn-outline btn-block btn-sm">
+                                    <i class="fa-solid fa-user-circle"></i> Profile
+                                </a>
+                                <a href="/appointments?doctor_id={{ doc.user_id }}" class="btn btn-primary btn-block btn-sm">
+                                    <i class="fa-regular fa-calendar-check"></i> Book
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="db-card reveal" style="grid-column: 1 / -1; text-align: center; padding: 60px;">
+                    <i class="fa-solid fa-user-slash" style="font-size: 3rem; color: var(--slate-300); margin-bottom: 20px;"></i>
+                    <p style="font-size: 1.2rem; color: var(--slate-500);">No doctors found for the selected criteria.</p>
+                </div>
+            {% endfor %}
+        </div>
+
+        <div style="margin-top: 40px;">
+            <a href="{{ url_for('dash.hospital_details', hospital_id=hospital.id) }}" class="btn btn-secondary btn-sm">
+                <i class="fa-solid fa-arrow-left"></i> Back to Hospital
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %}

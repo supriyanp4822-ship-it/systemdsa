@@ -1,0 +1,52 @@
+{% extends 'admin/base.html' %}
+
+{% block content %}
+<div class="admin-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3><i class="fa-solid fa-list-ol"></i> Global Active Queues</h3>
+        <form action="{{ url_for('admin.clear_completed_queues') }}" method="POST">
+            <button type="submit" class="btn btn-outline btn-sm"><i class="fa-solid fa-broom"></i> Process Cleanup</button>
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Token</th>
+                    <th>Patient</th>
+                    <th>Doctor</th>
+                    <th>Status</th>
+                    <th>Wait Est.</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in active_entries %}
+                <tr>
+                    <td><span class="badge badge-primary">T{{ '%03d' % entry.id }}</span></td>
+                    <td><strong>{{ entry.patient.name }}</strong></td>
+                    <td>{{ entry.doctor.name }} ({{ entry.doctor.doctor_profile.specialty }})</td>
+                    <td>
+                        <span class="badge badge-{{ 'success' if entry.status == 'in_consultation' else 'warning' }}">
+                            {{ entry.status | replace('_', ' ') | title }}
+                        </span>
+                    </td>
+                    <td>{{ entry.predicted_wait_time }} mins</td>
+                    <td>
+                        {% if entry.status == 'waiting' %}
+                        <form action="{{ url_for('dash.bump_priority', entry_id=entry.id) }}" method="POST" style="display:inline;">
+                            <button type="submit" class="btn btn-xs" style="color: #3b82f6;" title="Bump to Next"><i class="fa-solid fa-arrow-up"></i></button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not active_entries %}
+                <tr><td colspan="6" style="text-align: center; color: #94a3b8; padding: 40px;">No active queues at the moment.</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

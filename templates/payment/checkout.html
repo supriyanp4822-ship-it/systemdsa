@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}Checkout - Hospital QueueMS{% endblock %}
+
+{% block content %}
+<section class="dashboard-section">
+    <div class="dashboard-container" style="max-width: 600px;">
+        <div class="db-card reveal">
+            <h2 style="text-align: center; margin-bottom: 20px; color: var(--secondary);">
+                <i class="fa-solid fa-credit-card"></i> Consultation Checkout
+            </h2>
+
+            <div style="background: var(--slate-50); padding: 20px; border-radius: 12px; margin-bottom: 25px;">
+                <div class="detail-row">
+                    <span class="label">Patient Name:</span>
+                    <span class="value">{{ entry.patient.name }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Token Number:</span>
+                    <span class="value">T{{ '%03d' % entry.id }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Doctor:</span>
+                    <span class="value">{{ entry.doctor.name }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Department:</span>
+                    <span class="value">{{ doctor_profile.specialty if doctor_profile else 'General' }}</span>
+                </div>
+                <div class="detail-row" style="border-top: 2px solid var(--slate-200); margin-top: 10px; padding-top: 10px;">
+                    <span class="label" style="font-size: 1.1rem; color: var(--secondary);">Total Amount:</span>
+                    <span class="value" style="font-size: 1.3rem; color: var(--primary);">₹{{ doctor_profile.consultation_fee if doctor_profile else 500.0 }}</span>
+                </div>
+            </div>
+
+            <form action="{{ url_for('pay.process', entry_id=entry.id) }}" method="POST">
+                <h4 style="margin-bottom: 15px; color: var(--slate-700);">Select Payment Method</h4>
+                <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px;">
+                    <label class="checkbox-container" style="background: white; padding: 15px; border: 1px solid var(--slate-200); border-radius: 10px;">
+                        <input type="radio" name="payment_method" value="UPI" checked>
+                        <span style="margin-left: 10px;"><i class="fa-solid fa-mobile-screen-button"></i> UPI (PhonePe, GPay)</span>
+                    </label>
+                    <label class="checkbox-container" style="background: white; padding: 15px; border: 1px solid var(--slate-200); border-radius: 10px;">
+                        <input type="radio" name="payment_method" value="Card">
+                        <span style="margin-left: 10px;"><i class="fa-solid fa-credit-card"></i> Debit / Credit Card</span>
+                    </label>
+                    <label class="checkbox-container" style="background: white; padding: 15px; border: 1px solid var(--slate-200); border-radius: 10px;">
+                        <input type="radio" name="payment_method" value="Cash">
+                        <span style="margin-left: 10px;"><i class="fa-solid fa-money-bill-1"></i> Cash at Counter</span>
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block" style="padding: 15px; font-size: 1.1rem;">
+                    Confirm & Pay Now
+                </button>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

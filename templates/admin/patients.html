@@ -1,0 +1,45 @@
+{% extends 'admin/base.html' %}
+
+{% block content %}
+<div class="admin-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3><i class="fa-solid fa-user-injured"></i> Patient Management</h3>
+        <form action="{{ url_for('admin.patients') }}" method="GET" style="display: flex; gap: 10px;">
+            <input type="text" name="search" placeholder="Search name/email..." class="form-control" style="width: 250px;" value="{{ search }}">
+            <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-search"></i></button>
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for patient in patients %}
+                <tr>
+                    <td>#{{ patient.id }}</td>
+                    <td><strong>{{ patient.name }}</strong></td>
+                    <td>@{{ patient.username }}</td>
+                    <td>{{ patient.email }}</td>
+                    <td>
+                        <form action="{{ url_for('admin.delete_patient', user_id=patient.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Delete this patient?');">
+                            <button type="submit" class="btn btn-xs" style="color: #ef4444;"><i class="fa-solid fa-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not patients %}
+                <tr><td colspan="5" style="text-align: center; color: #94a3b8; padding: 40px;">No patients found.</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

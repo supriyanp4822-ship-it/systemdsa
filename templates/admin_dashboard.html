@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+
+{% block title %}Hospital Queue Management System - Admin Panel{% endblock %}
+
+{% block content %}
+<section class="dashboard-section">
+    <div class="dashboard-container">
+        <!-- Dashboard Welcome -->
+        <div class="db-welcome reveal">
+            <h2>System Administration Panel</h2>
+            <p>Monitor real-time clinical workflows, manage medical staff, and handle emergency priority overrides.</p>
+        </div>
+
+        <!-- Admin Global Stats Row -->
+        <div class="stats-row reveal" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
+            <div class="stat-card" style="padding: 20px; text-align: left; display: flex; align-items: center; justify-content: space-between; border-left: 5px solid #3b82f6;">
+                <div>
+                    <h3 style="color: #64748b; font-size: 0.9rem; margin-bottom: 5px;">Total Waiting</h3>
+                    <h2 style="font-size: 1.8rem; color: #0d3b66;">{{ total_waiting }}</h2>
+                </div>
+                <i class="fa-solid fa-hourglass-start" style="font-size: 2.2rem; color: #3b82f6;"></i>
+            </div>
+            
+            <div class="stat-card" style="padding: 20px; text-align: left; display: flex; align-items: center; justify-content: space-between; border-left: 5px solid #10b981;">
+                <div>
+                    <h3 style="color: #64748b; font-size: 0.9rem; margin-bottom: 5px;">Active Consultations</h3>
+                    <h2 style="font-size: 1.8rem; color: #0d3b66;">{{ total_consulting }}</h2>
+                </div>
+                <i class="fa-solid fa-user-doctor" style="font-size: 2.2rem; color: #10b981;"></i>
+            </div>
+
+            <div class="stat-card" style="padding: 20px; text-align: left; display: flex; align-items: center; justify-content: space-between; border-left: 5px solid #6366f1;">
+                <div>
+                    <h3 style="color: #64748b; font-size: 0.9rem; margin-bottom: 5px;">Completed Today</h3>
+                    <h2 style="font-size: 1.8rem; color: #0d3b66;">{{ total_completed }}</h2>
+                </div>
+                <i class="fa-solid fa-square-check" style="font-size: 2.2rem; color: #6366f1;"></i>
+            </div>
+        </div>
+
+        <div class="db-grid">
+            <!-- Left Side: Add Doctor Form -->
+            <div class="db-card reveal">
+                <h3><i class="fa-solid fa-user-plus"></i> Onboard New Doctor</h3>
+                <p class="subtitle" style="margin-bottom: 20px; font-size: 0.9rem; color: #64748b;">Add a new doctor account and initialize their medical profile.</p>
+                
+                <form method="POST" action="/admin/add_doctor">
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label for="name">Doctor's Name</label>
+                        <input type="text" id="name" name="name" class="form-control" placeholder="Dr. First Last" required>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label for="username">Login Username</label>
+                        <input type="text" id="username" name="username" class="form-control" placeholder="e.g. drsmith" required>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" name="email" class="form-control" placeholder="doctor@hospital.com" required>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" class="form-control" placeholder="Set temporary password" required>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label for="specialty">Medical Specialty</label>
+                        <select id="specialty" name="specialty" class="form-control" required>
+                            <option value="Cardiologist">Cardiologist</option>
+                            <option value="Neurologist">Neurologist</option>
+                            <option value="Orthopedic">Orthopedic</option>
+                            <option value="Pediatrician">Pediatrician</option>
+                            <option value="General Physician" selected>General Physician</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                        <div class="form-group">
+                            <label for="experience">Experience (Years)</label>
+                            <input type="number" id="experience" name="experience" class="form-control" value="5" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="consultation_fee">Consultation Fee (₹)</label>
+                            <input type="number" id="consultation_fee" name="consultation_fee" class="form-control" value="300" min="0" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                        <div class="form-group">
+                            <label for="latitude">Latitude</label>
+                            <input type="number" step="any" id="latitude" name="latitude" class="form-control" placeholder="e.g. 12.9786">
+                        </div>
+                        <div class="form-group">
+                            <label for="longitude">Longitude</label>
+                            <input type="number" step="any" id="longitude" name="longitude" class="form-control" placeholder="e.g. 77.5906">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block"><i class="fa-solid fa-user-check"></i> Register Doctor</button>
+                </form>
+            </div>
+
+            <!-- Right Side: Live Global Queue Override Board -->
+            <div class="db-card reveal">
+                <h3><i class="fa-solid fa-tower-broadcast"></i> Live Clinical Queues</h3>
+                <p class="subtitle" style="margin-bottom: 20px; font-size: 0.9rem; color: #64748b;">Manage current queues. Override positions for emergency arrivals.</p>
+                
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Doctor</th>
+                                <th>Patient</th>
+                                <th>Pos</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in active_queue %}
+                                <tr>
+                                    <td><strong>{{ entry.doctor.name }}</strong></td>
+                                    <td>{{ entry.patient.name }}</td>
+                                    <td>#{{ entry.position }}</td>
+                                    <td>
+                                        <span class="badge badge-{% if entry.status == 'in_consultation' %}success{% else %}warning{% endif %}">
+                                            {{ entry.status | title }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if entry.status == 'waiting' and entry.position > 1 %}
+                                            <form method="POST" action="{{ url_for('dash.bump_priority', entry_id=entry.id) }}">
+                                                <button type="submit" class="btn btn-secondary btn-xs"><i class="fa-solid fa-angles-up"></i> Bump to Front</button>
+                                            </form>
+                                        {% else %}
+                                            <span class="text-muted text-xs">No Overrides</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted" style="padding: 30px;">There are no active patients in any doctor queues today.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

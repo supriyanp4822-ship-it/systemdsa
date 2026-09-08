@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile: {{ doctor.name }}{% endblock %}
+
+{% block content %}
+<section class="dashboard-section">
+    <div class="dashboard-container">
+        <div class="db-welcome reveal">
+            <h2>Doctor Profile</h2>
+            <p>View qualifications, schedule and availability for {{ doctor.name }}</p>
+        </div>
+
+        <div class="db-grid">
+            <!-- Left Side: Profile Info -->
+            <div class="db-card reveal">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <div style="width: 120px; height: 120px; background: var(--primary-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; color: var(--primary); font-size: 3.5rem;">
+                        <i class="fa-solid fa-user-doctor"></i>
+                    </div>
+                    <h2 style="color: var(--secondary); margin-bottom: 5px;">{{ doctor.name }}</h2>
+                    <span class="badge badge-primary" style="font-size: 1rem; padding: 5px 15px;">{{ doctor.doctor_profile.specialty }}</span>
+                </div>
+
+                <div class="profile-details">
+                    <div class="detail-row">
+                        <span class="label">Hospital:</span>
+                        <span class="value">{{ doctor.doctor_profile.hospital.name if doctor.doctor_profile.hospital else 'Private Practice' }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">Experience:</span>
+                        <span class="value">{{ doctor.doctor_profile.experience }} Years</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">Rating:</span>
+                        <span class="value" style="color: var(--warning);">
+                            <i class="fa-solid fa-star"></i> {{ doctor.doctor_profile.rating }} / 5.0
+                        </span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">Consultation Fee:</span>
+                        <span class="value" style="font-weight: 800; color: var(--primary);">₹{{ doctor.doctor_profile.consultation_fee }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">Room Number:</span>
+                        <span class="value">{{ doctor.doctor_profile.room_number or '—' }}</span>
+                    </div>
+                </div>
+
+                <div style="margin-top: 30px;">
+                    <a href="/appointments?doctor_id={{ doctor.id }}" class="btn btn-primary btn-block">
+                        <i class="fa-regular fa-calendar-check"></i> Book Appointment Now
+                    </a>
+                </div>
+            </div>
+
+            <!-- Right Side: Schedule & Map -->
+            <div class="db-card reveal">
+                <h3><i class="fa-solid fa-calendar-days"></i> Weekly Schedule</h3>
+                <div class="table-responsive" style="margin-top: 20px;">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Day</th>
+                                <th>Timing</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sched in doctor.doctor_profile.schedules %}
+                            <tr>
+                                <td><strong>{{ sched.day_of_week }}</strong></td>
+                                <td>{{ sched.start_time }} - {{ sched.end_time }}</td>
+                                <td><span class="badge badge-success">Available</span></td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted">No specific schedule listed.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="margin-top: 40px; padding: 20px; background: #f8fafc; border-radius: 12px; border: 1px solid var(--slate-200);">
+                    <h4 style="margin-bottom: 15px; color: var(--secondary);"><i class="fa-solid fa-circle-info"></i> Availability Note</h4>
+                    <p style="font-size: 0.9rem; color: var(--slate-600); line-height: 1.5;">
+                        Dr. {{ doctor.name }} is typically available between <strong>{{ doctor.doctor_profile.available_from }}</strong> and <strong>{{ doctor.doctor_profile.available_to }}</strong>.
+                        Please note that emergency cases may affect scheduled times.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: 30px;">
+            <button onclick="history.back()" class="btn btn-secondary btn-sm">
+                <i class="fa-solid fa-arrow-left"></i> Back
+            </button>
+        </div>
+    </div>
+</section>
+{% endblock %}
