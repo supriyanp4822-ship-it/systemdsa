@@ -1,0 +1,11 @@
+{
+  "name": "hospital-queue-frontend",
+  "version": "1.0.0",
+  "description": "Frontend templates and static assets for Hospital Queue Management System",
+  "scripts": {
+    "start": "npx serve -s templates -p 3000"
+  },
+  "keywords": ["hospital", "queue", "frontend"],
+  "author": "",
+  "license": "MIT"
+}
