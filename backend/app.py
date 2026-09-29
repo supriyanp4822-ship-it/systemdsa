@@ -9,14 +9,36 @@ from flask_cors import CORS
 from config import config
 
 BASE_DIR = Path(__file__).resolve().parent
-FRONTEND_DIR = BASE_DIR.parent / 'frontend'
+
+def get_template_folder():
+    candidates = [
+        BASE_DIR.parent / 'frontend' / 'templates',
+        BASE_DIR / 'frontend' / 'templates',
+        BASE_DIR / 'templates',
+    ]
+    for p in candidates:
+        if p.exists():
+            return str(p)
+    return str(BASE_DIR / 'templates')
+
+def get_static_folder():
+    candidates = [
+        BASE_DIR.parent / 'frontend' / 'static',
+        BASE_DIR / 'frontend' / 'static',
+        BASE_DIR / 'static',
+        BASE_DIR.parent / 'static'
+    ]
+    for p in candidates:
+        if p.exists():
+            return str(p)
+    return str(BASE_DIR / 'static')
 
 def create_app(config_name=None):
     if config_name is None:
         config_name = os.environ.get('FLASK_ENV', 'development')
 
-    template_dir = str(FRONTEND_DIR / 'templates') if (FRONTEND_DIR / 'templates').exists() else 'templates'
-    static_dir = str(FRONTEND_DIR / 'static') if (FRONTEND_DIR / 'static').exists() else 'static'
+    template_dir = get_template_folder()
+    static_dir = get_static_folder()
 
     app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
     CORS(app)

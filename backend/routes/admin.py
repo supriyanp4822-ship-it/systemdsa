@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from extensions import db
 from models import User, DoctorProfile, DoctorSchedule, Appointment, QueueEntry, Department, Hospital, District, Payment, Notification, Consultation
 from datetime import date, datetime
-from sqlalchemy import func, or_
+from database import func, or_
 from functools import wraps
 
 admin_bp = Blueprint('admin', __name__)

@@ -33,7 +33,8 @@ def get_slots():
         appt_date = datetime.strptime(date_str, '%Y-%m-%d').date()
     except ValueError:
         return jsonify({'error': 'Invalid date'}), 400
-    doctor_profile = DoctorProfile.query.filter_by(user_id=doctor_id).first()
+    doc_id_val = int(doctor_id) if str(doctor_id).isdigit() else doctor_id
+    doctor_profile = DoctorProfile.query.filter_by(user_id=doc_id_val).first()
     if not doctor_profile:
         return jsonify({'error': 'Doctor profile not found'}), 404
     day_name = appt_date.strftime('%A')

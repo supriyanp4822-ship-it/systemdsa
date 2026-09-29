@@ -32,8 +32,8 @@ env/
 *.pem
 *.key
 
-# Database
-instance/*.db
+# Database & Local Cache
+instance/
 *.sqlite
 *.db
 
