@@ -1,0 +1,109 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Notification Management — Hospital QueueMS Admin{% endblock %}
+
+{% block content %}
+<div class="admin-topbar">
+    <div>
+        <h2 style="margin: 0; color: #0d3b66; font-size: 1.6rem; font-weight: 800;">
+            <i class="fa-solid fa-bell" style="color: #3b82f6;"></i> Notification Management &amp; Audit Logs
+        </h2>
+        <p style="margin: 3px 0 0; color: #64748b; font-size: 0.9rem;">
+            Real-time audit logs of automated system notifications, appointments, queue changes, and payment alerts.
+        </p>
+    </div>
+
+    <div>
+        <span class="badge badge-primary" style="padding: 8px 14px; font-size: 0.85rem;">
+            {{ notifications|length }} Logged Events
+        </span>
+    </div>
+</div>
+
+<div class="admin-card">
+    <!-- Category Filter Tabs -->
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; border-bottom: 1px solid #edf2f7; padding-bottom: 16px;">
+        <a href="{{ url_for('admin.notifications') }}" class="btn {% if not filter_type %}btn-primary{% else %}btn-outline{% endif %} btn-sm" style="border-radius: 8px;">
+            <i class="fa-solid fa-list"></i> All Events
+        </a>
+        <a href="{{ url_for('admin.notifications', type='appointment') }}" class="btn {% if filter_type == 'appointment' %}btn-primary{% else %}btn-outline{% endif %} btn-sm" style="border-radius: 8px;">
+            <i class="fa-regular fa-calendar-check"></i> Appointment Notifications
+        </a>
+        <a href="{{ url_for('admin.notifications', type='queue') }}" class="btn {% if filter_type == 'queue' %}btn-primary{% else %}btn-outline{% endif %} btn-sm" style="border-radius: 8px;">
+            <i class="fa-solid fa-hourglass-half"></i> Queue Notifications
+        </a>
+        <a href="{{ url_for('admin.notifications', type='payment') }}" class="btn {% if filter_type == 'payment' %}btn-primary{% else %}btn-outline{% endif %} btn-sm" style="border-radius: 8px;">
+            <i class="fa-solid fa-credit-card"></i> Payment Notifications
+        </a>
+        <a href="{{ url_for('admin.notifications', type='system') }}" class="btn {% if filter_type == 'system' %}btn-primary{% else %}btn-outline{% endif %} btn-sm" style="border-radius: 8px;">
+            <i class="fa-solid fa-shield-halved"></i> System Notifications
+        </a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table-admin">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Recipient</th>
+                    <th>Category</th>
+                    <th>Notification Title &amp; Message</th>
+                    <th>Reference / Payload</th>
+                    <th style="text-align: right;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for n in notifications %}
+                <tr>
+                    <td style="white-space: nowrap; color: #64748b; font-size: 0.82rem;">
+                        <i class="fa-regular fa-clock" style="margin-right: 4px;"></i>{{ n.created_at.strftime('%d %b %Y, %I:%M %p') if n.created_at else '—' }}
+                    </td>
+                    <td>
+                        <div style="font-weight: 700; color: #0f172a;">{{ n.user.name if n.user else 'System User' }}</div>
+                        <div style="font-size: 0.75rem; color: #64748b;">
+                            {{ n.user.role|capitalize if n.user else '' }} (ID: #{{ n.user_id }})
+                        </div>
+                    </td>
+                    <td>
+                        {% if n.event_type == 'appointment' or 'appointment' in n.title|lower %}
+                            <span class="badge badge-info"><i class="fa-regular fa-calendar-check" style="margin-right: 4px;"></i>Appointment</span>
+                        {% elif n.event_type == 'queue' or 'token' in n.title|lower or 'queue' in n.title|lower or 'waiting' in n.title|lower %}
+                            <span class="badge badge-warning"><i class="fa-solid fa-hourglass-half" style="margin-right: 4px;"></i>Queue</span>
+                        {% elif n.event_type == 'payment' or 'payment' in n.title|lower or 'receipt' in n.title|lower %}
+                            <span class="badge badge-success"><i class="fa-solid fa-credit-card" style="margin-right: 4px;"></i>Payment</span>
+                        {% else %}
+                            <span class="badge badge-primary"><i class="fa-solid fa-info-circle" style="margin-right: 4px;"></i>System</span>
+                        {% endif %}
+                    </td>
+                    <td style="max-width: 380px;">
+                        <div style="font-weight: 700; color: #0f172a; font-size: 0.88rem; margin-bottom: 2px;">{{ n.title }}</div>
+                        <div style="font-size: 0.82rem; color: #475569; line-height: 1.4;">{{ n.message }}</div>
+                    </td>
+                    <td style="font-size: 0.8rem; color: #64748b;">
+                        {% if n.extra_info %}
+                            <code>{{ n.extra_info }}</code>
+                        {% else %}
+                            <span style="color: #94a3b8; font-style: italic;">None</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right;">
+                        {% if n.is_read %}
+                            <span class="badge" style="background: #e2e8f0; color: #475569;"><i class="fa-solid fa-check-double" style="color: #3b82f6; margin-right: 4px;"></i>Read</span>
+                        {% else %}
+                            <span class="badge badge-info"><i class="fa-solid fa-envelope" style="margin-right: 4px;"></i>Unread</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" style="text-align: center; color: #94a3b8; padding: 40px;">
+                        <i class="fa-regular fa-bell-slash" style="font-size: 2rem; display: block; margin-bottom: 8px; opacity: 0.5;"></i>
+                        No system notification logs found matching this filter.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

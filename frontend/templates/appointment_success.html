@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+
+{% block title %}Appointment Confirmed - Hospital Queue Management System{% endblock %}
+
+{% block head %}
+<style>
+.success-page {
+  padding: 100px 20px 60px; min-height: 100vh;
+  background: linear-gradient(135deg,#f0f4ff 0%,#e8f5e9 100%);
+  display: flex; align-items: center; justify-content: center;
+}
+.success-card {
+  max-width: 600px; width: 100%;
+  background: #fff; border-radius: 24px;
+  box-shadow: 0 12px 48px rgba(13,59,102,.12);
+  overflow: hidden;
+  animation: popIn .5s cubic-bezier(.34,1.56,.64,1);
+}
+.success-header {
+  background: linear-gradient(135deg, #0d3b66 0%, #1a5276 40%, #15803d 100%);
+  padding: 40px 36px 30px; text-align: center; color: #fff;
+}
+.success-icon {
+  width: 72px; height: 72px; border-radius: 50%;
+  background: rgba(255,255,255,.2); backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 16px; font-size: 2rem;
+  animation: checkPop .6s .3s both;
+}
+.success-header h2 { margin: 0 0 6px; font-size: 1.5rem; font-weight: 800; }
+.success-header p  { margin: 0; opacity: .85; font-size: .9rem; }
+
+.success-body { padding: 28px 32px; }
+
+/* ID Strip */
+.appt-id-strip {
+  text-align: center; margin-bottom: 20px;
+  background: linear-gradient(135deg,#f0f9ff,#e0f2fe);
+  border-radius: 14px; padding: 18px; border: 1px solid #bae6fd;
+}
+.appt-id-strip span { display: block; font-size: .8rem; color: #64748b; margin-bottom: 4px; }
+.appt-id-strip strong { font-size: 1.6rem; color: #0c4a6e; letter-spacing: 2px; font-weight: 800; }
+
+/* Token + AI row */
+.token-ai-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;
+}
+.token-box, .ai-box {
+  border-radius: 14px; padding: 16px; text-align: center;
+  border: 1.5px solid;
+}
+.token-box {
+  background: linear-gradient(135deg,#f0fdf4,#dcfce7);
+  border-color: #86efac;
+}
+.token-box .tb-label { font-size: .74rem; color: #16a34a; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+.token-box .tb-value { font-size: 2rem; font-weight: 800; color: #15803d; letter-spacing: 2px; }
+.ai-box {
+  background: linear-gradient(135deg,#f0f4ff,#e0e7ff);
+  border-color: #c7d2fe;
+}
+.ai-box .ab-label { font-size: .74rem; color: #4338ca; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; display: flex; align-items: center; justify-content: center; gap: 5px; }
+.ai-box .ab-value { font-size: 2rem; font-weight: 800; color: #4338ca; }
+.ai-box .ab-unit  { font-size: .75rem; color: #6366f1; }
+
+/* Detail grid */
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.detail-item {
+  background: #f8fafc; border-radius: 12px; padding: 14px;
+  border: 1px solid #e2e8f0;
+}
+.detail-item .label { display: block; font-size: .74rem; color: #94a3b8; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 4px; }
+.detail-item .value { font-size: .92rem; font-weight: 700; color: #1e293b; }
+.detail-item .value i { margin-right: 5px; color: #1a5276; }
+
+/* Actions */
+.success-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.success-actions a, .success-actions button {
+  flex: 1; min-width: 120px; padding: 12px; border-radius: 12px;
+  text-align: center; font-weight: 600; font-size: .88rem;
+  text-decoration: none; cursor: pointer; border: none;
+  transition: transform .15s, box-shadow .2s;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+}
+.success-actions a:hover, .success-actions button:hover { transform: translateY(-1px); }
+.btn-dashboard { background: linear-gradient(135deg,#0d3b66,#1a5276); color: #fff; box-shadow: 0 4px 14px rgba(13,59,102,.2); }
+.btn-queue     { background: linear-gradient(135deg,#15803d,#16a34a); color: #fff; box-shadow: 0 4px 14px rgba(21,128,61,.2); }
+.btn-new-appt  { background: #f1f5f9; color: #334155; border: 1.5px solid #e2e8f0; }
+
+.next-steps-box {
+  background: #f8fafc; border-radius: 12px; padding: 14px 16px;
+  border: 1px dashed #cbd5e1; margin-bottom: 20px;
+  font-size: .82rem; color: #475569;
+}
+.next-steps-box strong { display: block; color: #0d3b66; margin-bottom: 8px; }
+.next-steps-box ol { margin: 0; padding-left: 18px; }
+.next-steps-box li { margin-bottom: 4px; }
+
+@keyframes popIn   { from { opacity:0; transform: scale(.9) translateY(20px); } to { opacity:1; transform: scale(1) translateY(0); } }
+@keyframes checkPop{ from { transform: scale(0); } to { transform: scale(1); } }
+@media (max-width: 480px) {
+  .detail-grid  { grid-template-columns: 1fr; }
+  .token-ai-row { grid-template-columns: 1fr; }
+  .success-actions { flex-direction: column; }
+  .success-body { padding: 20px; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="success-page">
+  <div class="success-card">
+    <div class="success-header">
+      <div class="success-icon"><i class="fa-solid fa-circle-check"></i></div>
+      <h2>Appointment Confirmed ✓</h2>
+      <p>Your booking has been secured. Here are your details.</p>
+    </div>
+
+    <div class="success-body">
+
+      <!-- Appointment ID -->
+      <div class="appt-id-strip">
+        <span>Appointment ID</span>
+        <strong>APPT-{{ '%05d' | format(appt.id) }}</strong>
+      </div>
+
+      <!-- Token + AI Wait row -->
+      <div class="token-ai-row">
+        <div class="token-box">
+          <div class="tb-label"><i class="fa-solid fa-ticket"></i> Queue Token</div>
+          <div class="tb-value">
+            {% if appt.queue_entry %}
+              T{{ '%03d' | format(appt.queue_entry.id) }}
+            {% else %}
+              —
+            {% endif %}
+          </div>
+          {% if appt.queue_entry %}
+          <div style="font-size:.74rem;color:#16a34a;margin-top:4px;">Position #{{ appt.queue_entry.position }}</div>
+          {% else %}
+          <div style="font-size:.72rem;color:#64748b;margin-top:4px;">Check in to get token</div>
+          {% endif %}
+        </div>
+
+        <div class="ai-box">
+          <div class="ab-label"><i class="fa-solid fa-brain"></i> AI Wait Time</div>
+          <div class="ab-value">
+            {% if appt.queue_entry %}
+              {{ [0, appt.queue_entry.predicted_wait_time]|max }}
+            {% else %}
+              —
+            {% endif %}
+          </div>
+          <div class="ab-unit">minutes (estimated)</div>
+        </div>
+      </div>
+
+      <!-- Details -->
+      <div class="detail-grid">
+        <div class="detail-item">
+          <span class="label">Hospital</span>
+          <span class="value"><i class="fa-solid fa-hospital"></i> {{ hospital.name if hospital else 'N/A' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Department</span>
+          <span class="value"><i class="fa-solid fa-building"></i> {{ department if department else 'N/A' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Doctor</span>
+          <span class="value"><i class="fa-solid fa-user-doctor"></i> {{ doctor.name if doctor else 'N/A' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Date</span>
+          <span class="value"><i class="fa-regular fa-calendar"></i> {{ appt.date.strftime('%d %b %Y') }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Time Slot</span>
+          <span class="value"><i class="fa-regular fa-clock"></i> {{ appt.time_slot }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Status</span>
+          <span class="value" style="color:#15803d;"><i class="fa-solid fa-check-circle"></i> {{ appt.status | capitalize }}</span>
+        </div>
+        {% if doctor and doctor.doctor_profile and doctor.doctor_profile.room_number %}
+        <div class="detail-item">
+          <span class="label">Consultation Room</span>
+          <span class="value"><i class="fa-solid fa-door-open"></i> Room {{ doctor.doctor_profile.room_number }}</span>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Next Steps -->
+      <div class="next-steps-box">
+        <strong><i class="fa-solid fa-list-check"></i> What's Next?</strong>
+        <ol>
+          <li>Visit the hospital on <strong>{{ appt.date.strftime('%d %b %Y') }}</strong> at <strong>{{ appt.time_slot }}</strong>.</li>
+          <li>From your dashboard, click <strong>Check In</strong> when you arrive to join the queue.</li>
+          <li>Your token and live queue position will appear on your dashboard.</li>
+          <li>Pay the consultation fee at the counter or through the portal.</li>
+        </ol>
+      </div>
+
+      <!-- Actions -->
+      <div class="success-actions">
+        <a href="/dashboard" class="btn-dashboard"><i class="fa-solid fa-gauge-high"></i> My Dashboard</a>
+        <a href="/queue" class="btn-queue"><i class="fa-solid fa-list-ol"></i> View Queue</a>
+        <a href="/appointments" class="btn-new-appt"><i class="fa-solid fa-plus"></i> New Appointment</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+{% endblock %}

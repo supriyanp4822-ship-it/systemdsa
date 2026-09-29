@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+
+{% block title %}Clinical Consultation — Token T{{ '%03d' % entry.id }} — Hospital QueueMS{% endblock %}
+
+{% block head %}
+<style>
+.consult-container {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 30px 15px 60px;
+}
+
+.consult-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 28px;
+    align-items: start;
+}
+
+@media (max-width: 860px) {
+    .consult-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.patient-info-card {
+    background: linear-gradient(135deg, #0d3b66 0%, #1e40af 100%);
+    color: #ffffff;
+    border-radius: 20px;
+    padding: 30px 26px;
+    box-shadow: 0 12px 30px rgba(13, 59, 102, 0.25);
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    font-size: 0.9rem;
+}
+
+.clinical-card {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 32px 30px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+}
+
+.form-label-bold {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="dashboard-section" style="min-height: 100vh; background: #f8fafc; padding: 35px 15px;">
+<div class="consult-container">
+
+    <!-- Top Navigation -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px;" class="reveal">
+        <a href="{{ url_for('doctor.dashboard') }}" class="btn btn-outline btn-sm" style="border-radius: 8px;">
+            <i class="fa-solid fa-arrow-left"></i> Back to Doctor Portal
+        </a>
+        
+        <span class="badge badge-success" style="padding: 6px 14px; font-size: 0.85rem;">
+            <i class="fa-solid fa-stethoscope"></i> Consultation In Progress
+        </span>
+    </div>
+
+    <div class="consult-grid">
+
+        <!-- LEFT: Patient & Consultation Summary Card -->
+        <div class="patient-info-card reveal">
+            <div style="margin-bottom: 20px;">
+                <span style="background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.35); padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">
+                    <i class="fa-solid fa-ticket"></i> Active Patient
+                </span>
+                <h2 style="color: #ffffff; margin: 12px 0 2px; font-size: 2.2rem; font-weight: 900;">
+                    T{{ '%03d' % entry.id }}
+                </h2>
+                <div style="font-size: 1.1rem; font-weight: 700; color: #ffffff;">{{ entry.patient.name }}</div>
+                <div style="color: rgba(255,255,255,0.7); font-size: 0.82rem;">Patient ID: #PAT-{{ entry.patient_id }}</div>
+            </div>
+
+            <div class="info-item">
+                <span style="color: rgba(255,255,255,0.7);"><i class="fa-solid fa-user-doctor"></i> Doctor:</span>
+                <strong>{{ current_user.name }}</strong>
+            </div>
+
+            <div class="info-item">
+                <span style="color: rgba(255,255,255,0.7);"><i class="fa-solid fa-stethoscope"></i> Department:</span>
+                <span>{{ doctor_profile.specialty if doctor_profile else 'General' }}</span>
+            </div>
+
+            <div class="info-item">
+                <span style="color: rgba(255,255,255,0.7);"><i class="fa-regular fa-calendar-check"></i> Appointment ID:</span>
+                <span style="font-family: monospace;">#APT-{{ entry.appointment_id or entry.id }}</span>
+            </div>
+
+            <div class="info-item">
+                <span style="color: rgba(255,255,255,0.7);"><i class="fa-regular fa-clock"></i> Scheduled Time:</span>
+                <span>{{ entry.appointment.time_slot if entry.appointment else 'Walk-in' }}</span>
+            </div>
+
+            <div class="info-item">
+                <span style="color: rgba(255,255,255,0.7);"><i class="fa-solid fa-door-open"></i> Cabin / Room:</span>
+                <span>{{ doctor_profile.room_number if doctor_profile else 'OPD-1' }}</span>
+            </div>
+
+            <div style="margin-top: 25px; padding: 12px; background: rgba(255,255,255,0.08); border-radius: 10px; border: 1px solid rgba(255,255,255,0.12); font-size: 0.78rem; color: rgba(255,255,255,0.75);">
+                <i class="fa-solid fa-shield-halved" style="color: #6ee7b7; margin-right: 4px;"></i>
+                Secure Doctor-Patient Confidential Medical Record.
+            </div>
+        </div>
+
+        <!-- RIGHT: Clinical Notes & Prescription Form -->
+        <div class="clinical-card reveal">
+            <h3 style="margin: 0 0 6px; color: #0d3b66; font-size: 1.35rem;">
+                <i class="fa-solid fa-file-medical" style="color: #3b82f6;"></i> Clinical Consultation Record
+            </h3>
+            <p style="color: #64748b; font-size: 0.88rem; margin: 0 0 22px;">Document symptoms, clinical diagnosis, prescriptions, and follow-up advice.</p>
+
+            <form method="POST" action="{{ url_for('doctor.consultation_page', entry_id=entry.id) }}">
+                
+                <!-- 1. Symptoms & Chief Complaints -->
+                <div class="form-group" style="margin-bottom: 18px;">
+                    <label class="form-label-bold">
+                        <i class="fa-solid fa-head-side-cough" style="color: #f59e0b;"></i> Chief Complaints &amp; Symptoms
+                    </label>
+                    <textarea name="symptoms" class="form-control" rows="3" placeholder="e.g., Patient presents with fever (101°F) for 3 days, mild dry cough, and headache..." style="border-radius: 10px; padding: 12px; font-size: 0.92rem;">{{ consult.symptoms or '' }}</textarea>
+                </div>
+
+                <!-- 2. Diagnosis -->
+                <div class="form-group" style="margin-bottom: 18px;">
+                    <label class="form-label-bold">
+                        <i class="fa-solid fa-microscope" style="color: #6366f1;"></i> Clinical Diagnosis
+                    </label>
+                    <input type="text" name="diagnosis" class="form-control" placeholder="e.g., Acute Upper Respiratory Tract Infection" value="{{ consult.diagnosis or '' }}" style="border-radius: 10px; padding: 12px; font-size: 0.92rem;">
+                </div>
+
+                <!-- 3. Prescription & Treatment -->
+                <div class="form-group" style="margin-bottom: 18px;">
+                    <label class="form-label-bold">
+                        <i class="fa-solid fa-prescription" style="color: #10b981;"></i> Prescription / Treatment Plan
+                    </label>
+                    <textarea name="prescription" class="form-control" rows="4" placeholder="e.g., 1. Tab Paracetamol 650mg — 1 tab TDS after food x 3 days&#10;2. Tab Cetirizine 10mg — 1 tab HS x 5 days&#10;3. Adequate hydration and rest." style="border-radius: 10px; padding: 12px; font-size: 0.92rem; font-family: monospace;">{{ consult.prescription or '' }}</textarea>
+                </div>
+
+                <!-- 4. Doctor Clinical Notes & Follow-up Date -->
+                <div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 15px; margin-bottom: 22px;">
+                    <div>
+                        <label class="form-label-bold">
+                            <i class="fa-regular fa-note-sticky" style="color: #0284c7;"></i> Doctor Private Notes / Advice
+                        </label>
+                        <input type="text" name="notes" class="form-control" placeholder="e.g., CBC test advised if fever persists" value="{{ consult.notes or '' }}" style="border-radius: 10px; padding: 10px 12px; font-size: 0.9rem;">
+                    </div>
+                    <div>
+                        <label class="form-label-bold">
+                            <i class="fa-regular fa-calendar-plus" style="color: #d97706;"></i> Follow-up Date
+                        </label>
+                        <input type="date" name="follow_up_date" class="form-control" value="{{ consult.follow_up_date.strftime('%Y-%m-%d') if consult.follow_up_date else '' }}" style="border-radius: 10px; padding: 10px 12px; font-size: 0.9rem;">
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end; padding-top: 15px; border-top: 1px solid #e2e8f0;">
+                    <button type="submit" name="save_only" class="btn btn-outline" style="border-radius: 10px; font-weight: 700; padding: 12px 20px;">
+                        <i class="fa-solid fa-floppy-disk"></i> Save Notes
+                    </button>
+                    <button type="submit" name="complete_and_save" value="true" class="btn btn-success" style="border-radius: 10px; font-weight: 700; padding: 12px 24px; background: linear-gradient(135deg, #10b981, #059669); border: none; box-shadow: 0 4px 15px rgba(16,185,129,0.35);">
+                        <i class="fa-solid fa-circle-check"></i> Complete Consultation &amp; Discharge
+                    </button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+
+</div>
+</section>
+{% endblock %}

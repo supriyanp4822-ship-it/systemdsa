@@ -1,0 +1,241 @@
+{% extends 'base.html' %}
+
+{% block title %}Location & Queue Dashboard - Hospital Queue Management{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" crossorigin=""/>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/location_dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="location-section">
+  <div class="loc-header reveal">
+    <div class="loc-title-group">
+      <i class="fa-solid fa-map-location-dot loc-icon"></i>
+      <div>
+        <h2>Tamil Nadu Health Trace</h2>
+        <p>Real-time Medical Directory · 38 Districts · AI Queue Predictions</p>
+      </div>
+    </div>
+    <div class="loc-legend">
+      <span class="legend-item"><span class="legend-dot hospital"></span>Hospital</span>
+      <span class="legend-item"><span class="legend-dot doctor"></span>Doctor</span>
+      <span class="legend-item"><span class="legend-dot trace"></span>Route</span>
+    </div>
+  </div>
+
+  <div class="loc-body">
+    <!-- LEFT: Explorer Panel -->
+    <div class="explorer-panel reveal">
+      <div class="panel-tabs">
+        <button class="tab-btn active" data-tab="hospitals">
+          <i class="fa-solid fa-hospital"></i> Hospitals
+        </button>
+        <button class="tab-btn" data-tab="route">
+          <i class="fa-solid fa-route"></i> Directions
+        </button>
+        <button class="tab-btn" data-tab="queue">
+          <i class="fa-solid fa-list-ol"></i> Live Queue
+        </button>
+      </div>
+
+      <!-- ── HOSPITALS TAB ── -->
+      <div class="tab-content" id="hospitalsTab">
+        <div class="panel-filters">
+          <div class="filter-row">
+            <select id="districtFilter" class="form-select">
+              <option value="all">All TN Districts</option>
+              {% for dist in districts %}
+                <option value="{{ dist.id }}">{{ dist.name }}</option>
+              {% endfor %}
+            </select>
+            <button id="btnClearDistrict" class="btn btn-xs btn-outline" title="Clear District">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          <div class="panel-search">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="hospitalSearch" placeholder="Search hospital name or dept…" />
+          </div>
+          <div id="hospitalCount" class="results-count">0 Hospitals Found</div>
+          <div id="debugPanel" class="debug-panel hidden"></div>
+        </div>
+        <div class="explorer-list" id="hospitalList"></div>
+      </div>
+
+      <!-- ── DOCTORS TAB (drill-down) ── -->
+      <div class="tab-content hidden" id="doctorsTab">
+        <div class="panel-header-sub">
+          <button id="btnBackToHospitals" class="btn btn-xs btn-outline">
+            <i class="fa-solid fa-arrow-left"></i> Back
+          </button>
+          <h4 id="selectedHospitalName">Hospital Name</h4>
+        </div>
+        <div class="panel-search">
+          <select id="deptFilter" class="form-select sm">
+            <option value="all">All Departments</option>
+          </select>
+        </div>
+        <div class="explorer-list" id="doctorList"></div>
+      </div>
+
+      <!-- ── ROUTE PLANNER TAB ── -->
+      <div class="tab-content hidden" id="routeTab">
+        <div class="route-planner">
+          <div class="rp-header">
+            <i class="fa-solid fa-diamond-turn-right rp-hero-icon"></i>
+            <div>
+              <h4>Route Planner</h4>
+              <p>Get directions from any location to a hospital</p>
+            </div>
+          </div>
+
+          <!-- Origin -->
+          <div class="rp-field">
+            <label class="rp-label" for="rpOrigin">
+              <i class="fa-solid fa-location-crosshairs" style="color:#10b981;"></i>
+              Starting Location
+            </label>
+            <div class="rp-input-wrap">
+              <input type="text" id="rpOrigin" class="rp-input" placeholder="e.g. Coimbatore, Salem…" autocomplete="off"/>
+              <button id="rpUseMyLocation" class="rp-locate-btn" title="Use my current GPS location">
+                <i class="fa-solid fa-crosshairs"></i>
+              </button>
+            </div>
+            <div id="rpOriginSuggestions" class="rp-suggestions hidden"></div>
+            <div id="rpOriginStatus" class="rp-status"></div>
+          </div>
+
+          <!-- District filter for destination -->
+          <div class="rp-field">
+            <label class="rp-label" for="rpDistrictFilter">
+              <i class="fa-solid fa-map" style="color:#6366f1;"></i>
+              Destination District
+            </label>
+            <select id="rpDistrictFilter" class="form-select">
+              <option value="">— Select District —</option>
+              {% for dist in districts %}
+                <option value="{{ dist.id }}" data-name="{{ dist.name }}">{{ dist.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Hospital selector -->
+          <div class="rp-field">
+            <label class="rp-label" for="rpHospital">
+              <i class="fa-solid fa-hospital" style="color:#ef4444;"></i>
+              Destination Hospital
+            </label>
+            <select id="rpHospital" class="form-select" disabled>
+              <option value="">— Select a district first —</option>
+            </select>
+          </div>
+
+          <!-- Buttons -->
+          <div class="rp-actions">
+            <button id="btnShowRoute" class="btn btn-primary btn-block" disabled>
+              <i class="fa-solid fa-route"></i> Show Route
+            </button>
+            <button id="btnClearRoute" class="btn btn-outline btn-block rp-clear-btn" style="display:none;">
+              <i class="fa-solid fa-eraser"></i> Clear Route
+            </button>
+          </div>
+
+          <!-- Route result info -->
+          <div id="routeInfoPanel" class="route-info-panel hidden">
+            <div class="ri-header">
+              <i class="fa-solid fa-circle-check" style="color:#10b981;"></i>
+              <span>Route Found</span>
+            </div>
+            <div class="ri-stats">
+              <div class="ri-stat">
+                <i class="fa-solid fa-road"></i>
+                <span id="riDistance">—</span>
+                <label>Distance</label>
+              </div>
+              <div class="ri-stat">
+                <i class="fa-regular fa-clock"></i>
+                <span id="riDuration">—</span>
+                <label>Est. Travel</label>
+              </div>
+            </div>
+            <div class="ri-waypoints">
+              <div class="ri-wp start">
+                <div class="ri-wp-dot"></div>
+                <div class="ri-wp-text">
+                  <label>From</label>
+                  <span id="riFrom">—</span>
+                </div>
+              </div>
+              <div class="ri-wp-line"></div>
+              <div class="ri-wp end">
+                <div class="ri-wp-dot"></div>
+                <div class="ri-wp-text">
+                  <label>To</label>
+                  <span id="riTo">—</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── QUEUE TAB ── -->
+      <div class="tab-content hidden" id="queueTab">
+        <div class="token-search-box">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="tokenSearch" placeholder="Search patient or token…" />
+        </div>
+        <div class="token-list" id="tokenList"></div>
+        <div class="token-summary" id="tokenSummary">
+          <div class="ts-item"><span id="totalWaiting">—</span><label>Waiting</label></div>
+          <div class="ts-item"><span id="totalConsulting">—</span><label>Consulting</label></div>
+          <div class="ts-item"><span id="totalDoctors">—</span><label>Doctors</label></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Map -->
+    <div class="map-wrapper reveal">
+      <div class="map-search-bar">
+        <div class="map-search-input-wrap">
+          <i class="fa-solid fa-magnifying-glass map-search-icon"></i>
+          <input type="text" id="mapSearch" placeholder="Search doctor, specialty or hospital…" autocomplete="off" />
+          <button id="mapSearchClear" class="map-search-clear" title="Clear search">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div id="mapSearchResults" class="map-search-results hidden"></div>
+      </div>
+
+      <div class="map-toolbar">
+        <button id="btnTraceAll" class="map-btn active" title="Show all locations">
+          <i class="fa-solid fa-location-dot"></i> Show All
+        </button>
+        <button id="btnTraceRoute" class="map-btn" title="Trace route Hospital to Doctors">
+          <i class="fa-solid fa-route"></i> Trace Routes
+        </button>
+        <button id="btnClearTrace" class="map-btn" title="Clear trace lines">
+          <i class="fa-solid fa-eraser"></i> Clear Traces
+        </button>
+        <button id="btnFitBounds" class="map-btn" title="Fit all markers">
+          <i class="fa-solid fa-compress-arrows-alt"></i> Fit View
+        </button>
+      </div>
+
+      <div id="map" class="map-container"></div>
+      <div class="map-coords" id="mapCoords">
+        <i class="fa-solid fa-crosshairs"></i>
+        <span id="coordText">Hover over map to see coordinates</span>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js" crossorigin=""></script>
+<script src="{{ url_for('static', filename='js/location_map.js') }}"></script>
+{% endblock %}

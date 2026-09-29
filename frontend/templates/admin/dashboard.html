@@ -1,0 +1,176 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Admin Dashboard — Hospital QueueMS{% endblock %}
+
+{% block content %}
+<div class="admin-topbar">
+    <div>
+        <h2 style="margin: 0; color: #0d3b66; font-size: 1.6rem; font-weight: 800;">
+            <i class="fa-solid fa-chart-pie" style="color: #3b82f6;"></i> System Overview Dashboard
+        </h2>
+        <p style="margin: 3px 0 0; color: #64748b; font-size: 0.9rem;">
+            Real-time operational metrics across hospitals, queues, doctors, and financial receipts.
+        </p>
+    </div>
+
+    <div>
+        <span class="badge badge-primary" style="padding: 8px 14px; font-size: 0.85rem;">
+            <i class="fa-regular fa-clock"></i> {{ today_appts }} Appointments Scheduled Today
+        </span>
+    </div>
+</div>
+
+<!-- KPI Summary Grid -->
+<div class="stat-grid">
+    <!-- 1. Total Patients -->
+    <div class="stat-box" style="border-left: 5px solid #3b82f6;">
+        <div class="stat-data">
+            <p>Total Patients</p>
+            <h3>{{ total_patients }}</h3>
+        </div>
+        <div class="stat-icon" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6;">
+            <i class="fa-solid fa-user-injured"></i>
+        </div>
+    </div>
+
+    <!-- 2. Total Doctors -->
+    <div class="stat-box" style="border-left: 5px solid #10b981;">
+        <div class="stat-data">
+            <p>Total Doctors</p>
+            <h3 style="color: #059669;">{{ total_doctors }}</h3>
+        </div>
+        <div class="stat-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
+            <i class="fa-solid fa-user-doctor"></i>
+        </div>
+    </div>
+
+    <!-- 3. Total Hospitals -->
+    <div class="stat-box" style="border-left: 5px solid #6366f1;">
+        <div class="stat-data">
+            <p>Total Hospitals</p>
+            <h3 style="color: #4f46e5;">{{ total_hospitals }}</h3>
+        </div>
+        <div class="stat-icon" style="background: rgba(99, 102, 241, 0.1); color: #6366f1;">
+            <i class="fa-solid fa-hospital"></i>
+        </div>
+    </div>
+
+    <!-- 4. Today's Appointments -->
+    <div class="stat-box" style="border-left: 5px solid #06b6d4;">
+        <div class="stat-data">
+            <p>Today's Appts</p>
+            <h3 style="color: #0891b2;">{{ today_appts }}</h3>
+        </div>
+        <div class="stat-icon" style="background: rgba(6, 182, 212, 0.1); color: #06b6d4;">
+            <i class="fa-regular fa-calendar-check"></i>
+        </div>
+    </div>
+
+    <!-- 5. Waiting Patients -->
+    <div class="stat-box" style="border-left: 5px solid #f59e0b;">
+        <div class="stat-data">
+            <p>Waiting Patients</p>
+            <h3 style="color: #d97706;">{{ waiting_patients }}</h3>
+        </div>
+        <div class="stat-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+            <i class="fa-solid fa-users-line"></i>
+        </div>
+    </div>
+
+    <!-- 6. Completed Consultations -->
+    <div class="stat-box" style="border-left: 5px solid #84cc16;">
+        <div class="stat-data">
+            <p>Completed Consults</p>
+            <h3 style="color: #65a30d;">{{ completed_today }}</h3>
+        </div>
+        <div class="stat-icon" style="background: rgba(132, 204, 22, 0.1); color: #84cc16;">
+            <i class="fa-solid fa-circle-check"></i>
+        </div>
+    </div>
+
+    <!-- 7. Today's Payments -->
+    <div class="stat-box" style="border-left: 5px solid #ec4899;">
+        <div class="stat-data">
+            <p>Today's Payments</p>
+            <h3 style="color: #db2777;">₹{{ '%.2f' % today_payments_amount }}</h3>
+        </div>
+        <div class="stat-icon" style="background: rgba(236, 72, 153, 0.1); color: #ec4899;">
+            <i class="fa-solid fa-receipt"></i>
+        </div>
+    </div>
+</div>
+
+<!-- Main Two Column Grid -->
+<div style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px;">
+
+    <!-- Recent Appointments -->
+    <div class="admin-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+            <h3 style="margin: 0; color: #0d3b66; font-size: 1.15rem;">
+                <i class="fa-regular fa-calendar" style="color: #3b82f6;"></i> Recent Appointments
+            </h3>
+            <a href="{{ url_for('admin.appointments') }}" class="btn btn-outline btn-xs">View All</a>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table-admin">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Patient</th>
+                        <th>Doctor</th>
+                        <th>Date & Slot</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for appt in recent_appts %}
+                    <tr>
+                        <td><strong>#APT-{{ appt.id }}</strong></td>
+                        <td>{{ appt.patient.name }}</td>
+                        <td>{{ appt.doctor.name }}</td>
+                        <td>{{ appt.date.strftime('%d %b') }} ({{ appt.time_slot }})</td>
+                        <td>
+                            <span class="badge badge-{% if appt.status == 'paid' %}success{% elif appt.status == 'scheduled' %}info{% elif appt.status == 'completed' %}primary{% else %}danger{% endif %}" style="font-size: 0.72rem;">
+                                {{ appt.status | title }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: #94a3b8; padding: 25px;">No appointments registered.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Department Live Workloads -->
+    <div class="admin-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+            <h3 style="margin: 0; color: #0d3b66; font-size: 1.15rem;">
+                <i class="fa-solid fa-building-user" style="color: #6366f1;"></i> Department Loads
+            </h3>
+            <a href="{{ url_for('admin.departments') }}" class="btn btn-outline btn-xs">Manage</a>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            {% for d in dept_stats %}
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #f8fafc; border-radius: 10px; border: 1px solid #edf2f7;">
+                <div>
+                    <strong style="color: #0f172a; font-size: 0.9rem;">{{ d.name }}</strong>
+                    <div style="font-size: 0.75rem; color: #64748b;">{{ d.doc_count }} Active Doctors</div>
+                </div>
+                <div>
+                    <span class="badge badge-{% if d.waiting > 0 %}warning{% else %}secondary{% endif %}">
+                        {{ d.waiting }} Waiting
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

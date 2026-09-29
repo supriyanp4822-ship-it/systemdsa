@@ -1,0 +1,490 @@
+{% extends 'base.html' %}
+
+{% block title %}Hospital Queue Management System - Patient Dashboard{% endblock %}
+
+{% block content %}
+<section class="dashboard-section">
+    <div class="dashboard-container">
+        <!-- Dashboard Welcome with Notification Bell -->
+        <div class="db-welcome reveal" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+            <div>
+                <h2>Hello, {{ current_user.name }}</h2>
+                <p>Welcome to your Patient Portal. Manage your bookings and track active check-ins below.</p>
+            </div>
+
+            <!-- Notification Bell Component -->
+            <div class="notif-bell-container" id="patientNotifContainer">
+                <button type="button" class="notif-bell-btn" id="notifBellBtn" aria-label="Notifications" title="Notifications">
+                    <i class="fa-solid fa-bell"></i>
+                    <span class="notif-badge" id="notifBadge" style="{% if not unread_count or unread_count == 0 %}display: none;{% endif %}">{{ unread_count }}</span>
+                </button>
+
+                <!-- Dropdown Panel -->
+                <div class="notif-dropdown" id="notifDropdown">
+                    <div class="notif-dropdown-header">
+                        <div class="notif-dropdown-title">
+                            <i class="fa-solid fa-bell"></i>
+                            <span>Notifications</span>
+                            <span class="notif-count-pill" id="notifCountPill">{{ unread_count }} unread</span>
+                        </div>
+                        <button type="button" class="notif-mark-all-btn" id="notifMarkAllBtn" onclick="markAllNotificationsRead()" title="Mark all as read">
+                            <i class="fa-solid fa-check-double"></i> Mark all read
+                        </button>
+                    </div>
+
+                    <div class="notif-dropdown-body" id="notifDropdownList">
+                        {% for n in notifications %}
+                            <div class="notif-item {% if not n.is_read %}unread{% endif %}" data-id="{{ n.id }}">
+                                <div class="notif-icon-col">
+                                    <div class="notif-type-icon notif-type-{{ n.event_type }}">
+                                        {% if n.event_type == 'appointment_booked' %}
+                                            <i class="fa-regular fa-calendar-check"></i>
+                                        {% elif n.event_type == 'queue_token_generated' %}
+                                            <i class="fa-solid fa-ticket"></i>
+                                        {% elif n.event_type == 'queue_position_changed' %}
+                                            <i class="fa-solid fa-arrows-up-down"></i>
+                                        {% elif n.event_type == 'waiting_time_updated' %}
+                                            <i class="fa-regular fa-clock"></i>
+                                        {% elif n.event_type == 'doctor_called' %}
+                                            <i class="fa-solid fa-user-doctor fa-shake"></i>
+                                        {% elif n.event_type == 'consultation_completed' %}
+                                            <i class="fa-solid fa-circle-check"></i>
+                                        {% elif n.event_type == 'payment_successful' %}
+                                            <i class="fa-solid fa-receipt"></i>
+                                        {% elif n.event_type == 'appointment_cancelled' %}
+                                            <i class="fa-solid fa-calendar-xmark"></i>
+                                        {% else %}
+                                            <i class="fa-solid fa-bell"></i>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="notif-content-col">
+                                    <div class="notif-title-row">
+                                        <h5 class="notif-item-title">{{ n.title }}</h5>
+                                        <span class="notif-time">{{ n.created_at.strftime('%I:%M %p') }}</span>
+                                    </div>
+                                    <p class="notif-item-msg">{{ n.message }}</p>
+                                    <div class="notif-footer-row">
+                                        <span class="notif-date-sub">{{ n.created_at.strftime('%d %b, %Y') }}</span>
+                                        {% if not n.is_read %}
+                                            <button type="button" class="btn-mark-single-read" onclick="markNotificationRead({{ n.id }}, this)" title="Mark as read">
+                                                <i class="fa-solid fa-check"></i> Mark read
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="notif-empty-state">
+                                <i class="fa-regular fa-bell-slash"></i>
+                                <p>No notifications yet</p>
+                                <span>You will be notified when appointment or queue updates occur.</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="notif-dropdown-footer">
+                        <a href="{{ url_for('dash.all_notifications') }}" class="notif-view-all-link">
+                            View All Notifications <i class="fa-solid fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="db-grid">
+            <!-- Left Side: Live Queue Tracking -->
+            <div class="db-card active-queue-card reveal">
+                <h3><i class="fa-solid fa-hourglass-half"></i> Live Queue Status</h3>
+                
+                {% if active_queue %}
+                    <div class="queue-status-block">
+                        <div class="queue-info-header">
+                            <div>
+                                <h4>{{ active_queue.doctor.name }}</h4>
+                                <p>{{ active_queue.doctor.doctor_profile.specialty if active_queue.doctor.doctor_profile else 'General Practitioner' }}</p>
+                            </div>
+                            <span class="badge badge-{% if active_queue.status == 'in_consultation' %}success{% else %}warning{% endif %}">
+                                {{ active_queue.status | replace('_', ' ') | title }}
+                            </span>
+                        </div>
+
+                        <div class="queue-metrics">
+                            <div class="metric-circle">
+                                <h2>T{{ '%03d' % active_queue.id }}</h2>
+                                <p>Your Token</p>
+                            </div>
+
+                            <div class="metric-circle" style="background: rgba(59, 130, 246, 0.1); color: #0d3b66; border: 2px solid #3b82f6;">
+                                <h2>#{{ active_queue.position }}</h2>
+                                <p>Queue Position</p>
+                            </div>
+                            
+                            <div class="metric-wait" style="position:relative;">
+                                <p style="display:flex;align-items:center;gap:5px;">
+                                    <i class="fa-solid fa-brain" style="color:#6366f1;font-size:0.75rem;"></i>
+                                    AI Estimated Waiting Time
+                                </p>
+                                <h2>{{ [0, active_queue.predicted_wait_time]|max }} <span>Mins</span></h2>
+                            </div>
+                        </div>
+
+                        <div class="queue-summary">
+                            {% if active_queue.status == 'waiting' %}
+                                <p><i class="fa-solid fa-circle-info"></i> There are <strong>{{ patients_ahead }}</strong> patients ahead of you.</p>
+                            {% elif active_queue.status == 'in_consultation' %}
+                                <p class="highlight-text"><i class="fa-solid fa-bell fa-shake"></i> Please head inside the doctor's cabin immediately!</p>
+                            {% elif active_queue.status == 'completed' %}
+                                <div style="margin-top: 15px; border-top: 1px solid var(--slate-100); padding-top: 15px;">
+                                    <p style="color: var(--success); font-weight: 700; margin-bottom: 10px;">Consultation Complete</p>
+                                    {% if active_queue.payment %}
+                                        <a href="{{ url_for('pay.receipt', payment_id=active_queue.payment.id) }}" class="btn btn-success btn-block btn-sm">
+                                            <i class="fa-solid fa-file-invoice"></i> View Receipt
+                                        </a>
+                                    {% else %}
+                                        <a href="{{ url_for('pay.checkout', entry_id=active_queue.id) }}" class="btn btn-primary btn-block btn-sm">
+                                            <i class="fa-solid fa-credit-card"></i> Pay Consultation Fee
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fa-solid fa-users-viewfinder"></i>
+                        <p>You have not checked in to any queue today.</p>
+                        <p class="sub">Check in below once your appointment slot is near.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Right Side: Profile Summary -->
+            <div class="db-card profile-card reveal">
+                <h3><i class="fa-regular fa-address-card"></i> Account Info</h3>
+                <div class="profile-details">
+                    <div class="detail-row">
+                        <span class="label">Name:</span>
+                        <span class="value">{{ current_user.name }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">Username:</span>
+                        <span class="value">@{{ current_user.username }}</span>
+                    </div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+                    <a href="{{ url_for('dash.all_notifications') }}" class="btn btn-outline btn-block"><i class="fa-solid fa-bell"></i> View Notifications</a>
+                    <a href="{{ url_for('pay.history') }}" class="btn btn-outline btn-block"><i class="fa-solid fa-clock-rotate-left"></i> Payment History</a>
+                    <a href="/appointments" class="btn btn-primary btn-block"><i class="fa-regular fa-calendar-plus"></i> Book New Appointment</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upcoming Appointment Highlight Banner -->
+        {% if upcoming_appt %}
+        <div class="db-card upcoming-card reveal" style="margin-top: 30px; border-left: 5px solid var(--primary); background: linear-gradient(135deg, rgba(37, 99, 235, 0.04), rgba(16, 185, 129, 0.04)); position: relative; overflow: hidden;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 15px; margin-bottom: 18px;">
+                <div>
+                    <span style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; color: var(--primary); background: rgba(37, 99, 235, 0.1); padding: 4px 10px; border-radius: 20px; display: inline-block; margin-bottom: 6px;">
+                        <i class="fa-regular fa-clock"></i> Next Upcoming Appointment
+                    </span>
+                    <h3 style="margin: 0; font-size: 1.3rem; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-user-doctor" style="color: var(--primary);"></i> Dr. {{ upcoming_appt.doctor.name }}
+                        <span style="font-size: 0.85rem; font-weight: 500; color: var(--text-muted);">({{ upcoming_dept }})</span>
+                    </h3>
+                </div>
+                <div>
+                    <span class="badge badge-{% if upcoming_appt.status == 'scheduled' %}info{% elif upcoming_appt.status == 'paid' %}primary{% else %}success{% endif %}" style="font-size: 0.85rem; padding: 6px 14px; text-transform: uppercase;">
+                        Status: {{ upcoming_appt.status | title }}
+                    </span>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; background: rgba(255,255,255,0.7); dark:background: rgba(15,23,42,0.6); padding: 16px; border-radius: 12px; margin-bottom: 18px; border: 1px solid rgba(0,0,0,0.05);">
+                <div>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); display: block;"><i class="fa-solid fa-hospital"></i> Hospital</span>
+                    <strong style="font-size: 0.95rem; color: var(--text-color);">{{ upcoming_hospital.name if upcoming_hospital else 'Medical Center' }}</strong>
+                    {% if upcoming_hospital and upcoming_hospital.district %}
+                    <div style="font-size: 0.75rem; color: var(--text-muted);"><i class="fa-solid fa-location-dot"></i> {{ upcoming_hospital.district }}</div>
+                    {% endif %}
+                </div>
+                <div>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); display: block;"><i class="fa-regular fa-calendar"></i> Date & Time</span>
+                    <strong style="font-size: 0.95rem; color: var(--text-color);">{{ upcoming_appt.date.strftime('%A, %d %b %Y') }}</strong>
+                    <div style="font-size: 0.8rem; color: var(--primary); font-weight: 600;"><i class="fa-regular fa-clock"></i> {{ upcoming_appt.time_slot }}</div>
+                </div>
+                <div>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); display: block;"><i class="fa-solid fa-door-open"></i> Room / Token</span>
+                    <strong style="font-size: 0.95rem; color: var(--text-color);">
+                        {% if upcoming_appt.queue_entry %}
+                            Token #{{ upcoming_appt.queue_entry.token_number }}
+                        {% else %}
+                            Room {{ upcoming_appt.doctor.doctor_profile.room_number if upcoming_appt.doctor.doctor_profile else 'OPD-1' }}
+                        {% endif %}
+                    </strong>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">
+                        Ref: #APT-{{ upcoming_appt.id }}
+                    </div>
+                </div>
+                <div>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); display: block;"><i class="fa-solid fa-wand-magic-sparkles" style="color: #6366f1;"></i> AI Est. Wait</span>
+                    <strong style="font-size: 1.1rem; color: #6366f1;">~{{ [0, upcoming_ai_wait]|max }} mins</strong>
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">Real-time queue prediction</div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; align-items: center;">
+                {% if upcoming_appt.queue_entry %}
+                    <a href="{{ url_for('queue.index') }}" class="btn btn-primary btn-sm">
+                        <i class="fa-solid fa-users-line"></i> View Live Queue
+                    </a>
+                {% elif upcoming_appt.status == 'paid' %}
+                    <form method="POST" action="{{ url_for('queue.checkin', appt_id=upcoming_appt.id) }}" style="display: inline;">
+                        <button type="submit" class="btn btn-success btn-sm"><i class="fa-solid fa-right-to-bracket"></i> Check In to Queue</button>
+                    </form>
+                    <a href="{{ url_for('queue.index') }}" class="btn btn-outline btn-sm">
+                        <i class="fa-solid fa-users-line"></i> View Doctor's Queue
+                    </a>
+                {% elif upcoming_appt.status == 'scheduled' %}
+                    <a href="{{ url_for('appointments.payment', appt_id=upcoming_appt.id) }}" class="btn btn-secondary btn-sm">
+                        <i class="fa-solid fa-credit-card"></i> Pay Consultation Fee
+                    </a>
+                    <a href="{{ url_for('queue.index') }}" class="btn btn-outline btn-sm">
+                        <i class="fa-solid fa-users-line"></i> View Doctor's Queue
+                    </a>
+                {% endif %}
+                <form method="POST" action="{{ url_for('appointments.cancel', appt_id=upcoming_appt.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to cancel this appointment?');">
+                    <button type="submit" class="btn btn-outline btn-sm" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.4);">
+                        <i class="fa-solid fa-xmark"></i> Cancel
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Lower Section: Appointments Table -->
+        <div class="db-card appointments-card reveal" style="margin-top: 30px;">
+            <h3><i class="fa-regular fa-calendar-check"></i> Your Appointments</h3>
+            
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Doctor</th>
+                            <th>Specialty</th>
+                            <th>Date</th>
+                            <th>Time Slot</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for appt in appointments %}
+                            <tr>
+                                <td><strong>{{ appt.doctor.name }}</strong></td>
+                                <td>{{ appt.doctor.doctor_profile.specialty if appt.doctor.doctor_profile else 'General' }}</td>
+                                <td>{{ appt.date.strftime('%d %b, %Y') }}</td>
+                                <td>{{ appt.time_slot }}</td>
+                                <td>
+                                    <span class="badge badge-{% if appt.status == 'scheduled' %}info{% elif appt.status == 'paid' %}primary{% elif appt.status == 'completed' %}success{% else %}danger{% endif %}">
+                                        {{ appt.status | title }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if appt.status == 'scheduled' %}
+                                        <a href="{{ url_for('appointments.payment', appt_id=appt.id) }}" class="btn btn-secondary btn-xs"><i class="fa-solid fa-credit-card"></i> Pay Now</a>
+                                        <form method="POST" action="{{ url_for('appointments.cancel', appt_id=appt.id) }}" style="display:inline; margin-left: 4px;" onsubmit="return confirm('Cancel this appointment?');">
+                                            <button type="submit" class="btn btn-outline btn-xs" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.4);" title="Cancel Appointment">
+                                                <i class="fa-solid fa-xmark"></i> Cancel
+                                            </button>
+                                        </form>
+                                    {% elif appt.status == 'paid' %}
+                                        <!-- Check if there is an active queue entry for this appt -->
+                                        {% if appt.queue_entry %}
+                                            <span class="text-muted text-xs">Active in Queue</span>
+                                        {% else %}
+                                            <form method="POST" action="{{ url_for('queue.checkin', appt_id=appt.id) }}" style="display:inline;">
+                                                <button type="submit" class="btn btn-success btn-xs"><i class="fa-solid fa-right-to-bracket"></i> Check In</button>
+                                            </form>
+                                            <form method="POST" action="{{ url_for('appointments.cancel', appt_id=appt.id) }}" style="display:inline; margin-left: 4px;" onsubmit="return confirm('Cancel this paid appointment?');">
+                                                <button type="submit" class="btn btn-outline btn-xs" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.4);" title="Cancel Appointment">
+                                                    <i class="fa-solid fa-xmark"></i> Cancel
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted text-xs">No Action Required</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted">You have no appointments registered.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Toggle Notification Dropdown
+    const notifBellBtn = document.getElementById('notifBellBtn');
+    const notifDropdown = document.getElementById('notifDropdown');
+    const notifBadge = document.getElementById('notifBadge');
+    const notifCountPill = document.getElementById('notifCountPill');
+    const notifDropdownList = document.getElementById('notifDropdownList');
+
+    if (notifBellBtn && notifDropdown) {
+        notifBellBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            notifDropdown.classList.toggle('active');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!notifDropdown.contains(e.target) && !notifBellBtn.contains(e.target)) {
+                notifDropdown.classList.remove('active');
+            }
+        });
+    }
+
+    // Mark single notification as read
+    function markNotificationRead(id, btn) {
+        fetch(`/dashboard/api/notifications/${id}/read`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const item = btn.closest('.notif-item');
+                if (item) {
+                    item.classList.remove('unread');
+                    btn.remove();
+                }
+                updateNotifBadges(data.unread_count);
+            }
+        })
+        .catch(err => console.error('Error marking read:', err));
+    }
+
+    // Mark all notifications as read
+    function markAllNotificationsRead() {
+        fetch('/dashboard/api/notifications/mark-all-read', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                document.querySelectorAll('.notif-item').forEach(item => {
+                    item.classList.remove('unread');
+                    const markBtn = item.querySelector('.btn-mark-single-read');
+                    if (markBtn) markBtn.remove();
+                });
+                updateNotifBadges(0);
+            }
+        })
+        .catch(err => console.error('Error marking all read:', err));
+    }
+
+    function updateNotifBadges(count) {
+        if (notifBadge) {
+            notifBadge.textContent = count;
+            notifBadge.style.display = count > 0 ? 'inline-flex' : 'none';
+        }
+        if (notifCountPill) {
+            notifCountPill.textContent = `${count} unread`;
+        }
+        const navBadge = document.getElementById('navNotifBadge');
+        if (navBadge) {
+            navBadge.textContent = count;
+            navBadge.style.display = count > 0 ? 'inline-flex' : 'none';
+        }
+    }
+
+    function getEventIcon(eventType) {
+        switch (eventType) {
+            case 'appointment_booked': return '<i class="fa-regular fa-calendar-check"></i>';
+            case 'queue_token_generated': return '<i class="fa-solid fa-ticket"></i>';
+            case 'queue_position_changed': return '<i class="fa-solid fa-arrows-up-down"></i>';
+            case 'waiting_time_updated': return '<i class="fa-regular fa-clock"></i>';
+            case 'doctor_called': return '<i class="fa-solid fa-user-doctor fa-shake"></i>';
+            case 'consultation_completed': return '<i class="fa-solid fa-circle-check"></i>';
+            case 'payment_successful': return '<i class="fa-solid fa-receipt"></i>';
+            case 'appointment_cancelled': return '<i class="fa-solid fa-calendar-xmark"></i>';
+            default: return '<i class="fa-solid fa-bell"></i>';
+        }
+    }
+
+    // Refresh notifications from API
+    function fetchLiveNotifications() {
+        fetch('/dashboard/api/notifications')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    updateNotifBadges(data.unread_count);
+                    
+                    // If dropdown is open or empty, update items
+                    if (notifDropdownList && data.notifications.length > 0) {
+                        const html = data.notifications.map(n => `
+                            <div class="notif-item ${!n.is_read ? 'unread' : ''}" data-id="${n.id}">
+                                <div class="notif-icon-col">
+                                    <div class="notif-type-icon notif-type-${n.event_type}">
+                                        ${getEventIcon(n.event_type)}
+                                    </div>
+                                </div>
+                                <div class="notif-content-col">
+                                    <div class="notif-title-row">
+                                        <h5 class="notif-item-title">${n.title}</h5>
+                                        <span class="notif-time">${n.time_ago}</span>
+                                    </div>
+                                    <p class="notif-item-msg">${n.message}</p>
+                                    <div class="notif-footer-row">
+                                        <span class="notif-date-sub">${n.created_at}</span>
+                                        ${!n.is_read ? `
+                                            <button type="button" class="btn-mark-single-read" onclick="markNotificationRead(${n.id}, this)" title="Mark as read">
+                                                <i class="fa-solid fa-check"></i> Mark read
+                                            </button>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('');
+                        notifDropdownList.innerHTML = html;
+                    }
+                }
+            })
+            .catch(err => console.error('Error fetching notifications:', err));
+    }
+
+    // Real-time poll for patient dashboard queue & notifications
+    setInterval(() => {
+        fetchLiveNotifications();
+
+        fetch(window.location.href)
+            .then(response => {
+                if (response.ok) return response.text();
+                throw new Error('Network error polling patient dashboard.');
+            })
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const selectors = ['.queue-status-block', '.appointments-card'];
+                selectors.forEach(selector => {
+                    const newEl = doc.querySelector(selector);
+                    const currentEl = document.querySelector(selector);
+                    if (newEl && currentEl && currentEl.innerHTML !== newEl.innerHTML) {
+                        currentEl.innerHTML = newEl.innerHTML;
+                    }
+                });
+            })
+            .catch(error => console.error('Error polling dashboard:', error));
+    }, 4000);
+</script>
+{% endblock %}
+

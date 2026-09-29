@@ -1,0 +1,264 @@
+{% extends 'base.html' %}
+{% block title %}Appointment Payment — Hospital QueueMS{% endblock %}
+
+{% block head %}
+<style>
+.checkout-container {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 30px 15px 60px;
+}
+.checkout-grid {
+    display: grid;
+    grid-template-columns: 1.05fr 1.15fr;
+    gap: 28px;
+    align-items: start;
+}
+@media (max-width: 860px) {
+    .checkout-grid { grid-template-columns: 1fr; }
+}
+.summary-card {
+    background: linear-gradient(145deg, #0d3b66 0%, #1e40af 100%);
+    color: #ffffff;
+    border-radius: 20px;
+    padding: 32px 28px;
+    box-shadow: 0 15px 35px rgba(13, 59, 102, 0.25);
+}
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 11px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 0.92rem;
+}
+.payment-card {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 32px 28px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+}
+.method-option {
+    border: 2px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 12px;
+}
+.method-option:hover { border-color: #3b82f6; background: #f8fbff; }
+.method-option.selected { border-color: #2563eb; background: #eff6ff; }
+.gpay-btn {
+    background: linear-gradient(135deg, #1a73e8, #0d47a1);
+    color: #ffffff !important;
+    border: none;
+    border-radius: 12px;
+    padding: 14px 20px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    text-decoration: none;
+    box-shadow: 0 6px 18px rgba(26, 115, 232, 0.35);
+}
+.upi-generic-btn {
+    background: #ffffff;
+    color: #0f172a;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 12px;
+    padding: 12px 18px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 8px;
+    text-decoration: none;
+}
+.qr-wrapper {
+    background: #ffffff;
+    border: 2px dashed #cbd5e1;
+    border-radius: 14px;
+    padding: 16px;
+    text-align: center;
+    display: inline-block;
+    margin: 10px 0;
+}
+.qr-image {
+    width: 180px;
+    height: 180px;
+    border-radius: 8px;
+    display: block;
+    margin: 0 auto;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="dashboard-section" style="min-height: 100vh; background: #f8fafc; padding: 35px 15px;">
+<div class="checkout-container">
+
+    <div class="db-welcome reveal" style="margin-bottom: 25px;">
+        <h2 style="display: flex; align-items: center; gap: 10px; margin: 0; color: #0d3b66;">
+            <i class="fa-solid fa-lock" style="color: #10b981;"></i> Secure Appointment Checkout
+        </h2>
+        <p style="color: #64748b; margin-top: 4px;">Confirm your clinical booking details and complete fee payment via Google Pay / UPI or Card.</p>
+    </div>
+
+    <div class="checkout-grid">
+
+        <!-- Booking Summary -->
+        <div class="summary-card reveal">
+            <div style="margin-bottom: 20px;">
+                <span style="background: rgba(16,185,129,0.2); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.35); padding: 5px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">
+                    <i class="fa-solid fa-calendar-check"></i> Booking Summary
+                </span>
+                <h3 style="color: #fff; margin: 12px 0 2px; font-size: 1.4rem;">Appointment Details</h3>
+            </div>
+
+            <div class="summary-row">
+                <span style="color: rgba(255,255,255,0.7);"><i class="fa-solid fa-user"></i> Patient Name</span>
+                <strong>{{ current_user.name }}</strong>
+            </div>
+
+            <div class="summary-row">
+                <span style="color: rgba(255,255,255,0.7);"><i class="fa-solid fa-hospital"></i> Hospital</span>
+                <span>{{ hospital.name if hospital else 'PSG Hospitals' }}</span>
+            </div>
+
+            <div class="summary-row">
+                <span style="color: rgba(255,255,255,0.7);"><i class="fa-solid fa-user-doctor"></i> Doctor</span>
+                <strong>{{ appt.doctor.name }}</strong>
+            </div>
+
+            <div class="summary-row">
+                <span style="color: rgba(255,255,255,0.7);"><i class="fa-solid fa-stethoscope"></i> Department</span>
+                <span>{{ doctor_profile.specialty if doctor_profile else 'General Consultation' }}</span>
+            </div>
+
+            <div class="summary-row">
+                <span style="color: rgba(255,255,255,0.7);"><i class="fa-regular fa-calendar"></i> Date</span>
+                <span>{{ appt.date.strftime('%A, %d %b %Y') }}</span>
+            </div>
+
+            <div class="summary-row">
+                <span style="color: rgba(255,255,255,0.7);"><i class="fa-regular fa-clock"></i> Time Slot</span>
+                <span style="color: #6ee7b7; font-weight: 700;">{{ appt.time_slot }}</span>
+            </div>
+
+            <div class="summary-row" style="border-top: 2px solid rgba(255,255,255,0.2); margin-top: 15px; padding-top: 15px;">
+                <span style="font-size: 1.1rem; font-weight: 700;">Total Amount Due</span>
+                <span style="font-size: 1.6rem; font-weight: 800; color: #6ee7b7;">₹{{ '%.2f' % amount }}</span>
+            </div>
+        </div>
+
+        <!-- Payment Method -->
+        <div class="payment-card reveal">
+            <h3 style="color: #0d3b66; margin: 0 0 6px; font-size: 1.3rem;">
+                <i class="fa-solid fa-wallet" style="color: #3b82f6;"></i> Payment Method
+            </h3>
+            <p style="color: #64748b; font-size: 0.88rem; margin: 0 0 20px;">Choose your payment method to secure your slot.</p>
+
+            <form method="POST" action="{{ url_for('appointments.payment', appt_id=appt.id) }}" id="apptPaymentForm">
+                <input type="hidden" name="transaction_id" value="{{ txn_ref }}">
+                
+                <!-- UPI -->
+                <div class="method-option selected" id="opt-UPI" onclick="chooseMethod('UPI')">
+                    <input type="radio" name="payment_method" value="UPI" checked style="display:none;" id="radio-UPI">
+                    <div style="width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #1a73e8, #34a853); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.4rem;">
+                        <i class="fa-brands fa-google-pay"></i>
+                    </div>
+                    <div style="flex-grow: 1;">
+                        <strong style="color: #0f172a;">UPI / Google Pay</strong>
+                        <div style="font-size: 0.8rem; color: #64748b;">Google Pay, PhonePe, Paytm, BHIM</div>
+                    </div>
+                    <i class="fa-solid fa-circle-check" style="color: #2563eb; font-size: 1.2rem;" id="chk-UPI"></i>
+                </div>
+
+                <!-- Card -->
+                <div class="method-option" id="opt-Card" onclick="chooseMethod('Card')">
+                    <input type="radio" name="payment_method" value="Card" style="display:none;" id="radio-Card">
+                    <div style="width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #6366f1, #3b82f6); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.2rem;">
+                        <i class="fa-solid fa-credit-card"></i>
+                    </div>
+                    <div style="flex-grow: 1;">
+                        <strong style="color: #0f172a;">Credit / Debit Card</strong>
+                        <div style="font-size: 0.8rem; color: #64748b;">Visa, Mastercard, RuPay</div>
+                    </div>
+                    <i class="fa-solid fa-circle-check" style="color: #2563eb; font-size: 1.2rem; display:none;" id="chk-Card"></i>
+                </div>
+
+                <!-- UPI Panel -->
+                <div id="panel-UPI" style="background: #fafafa; border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px; margin-top: 15px;">
+                    <a href="{{ gpay_url }}" class="gpay-btn">
+                        <i class="fa-brands fa-google-pay" style="font-size: 1.5rem;"></i>
+                        Pay with Google Pay (₹{{ '%.2f' % amount }})
+                    </a>
+
+                    <a href="{{ upi_url }}" class="upi-generic-btn">
+                        <i class="fa-solid fa-mobile-screen-button" style="color: #2563eb;"></i>
+                        Pay with Any Other UPI App
+                    </a>
+
+                    <div style="text-align: center; margin-top: 15px; padding-top: 12px; border-top: 1px dashed #e2e8f0;">
+                        <p style="margin: 0 0 6px; font-weight: 600; color: #334155; font-size: 0.85rem;">
+                            <i class="fa-solid fa-qrcode" style="color: #2563eb;"></i> Scan QR code with Google Pay / UPI
+                        </p>
+                        <div class="qr-wrapper">
+                            <img src="{{ qr_code_data }}" alt="UPI QR" class="qr-image">
+                        </div>
+                        <div style="font-size: 0.78rem; color: #64748b;">
+                            UPI ID: <strong>{{ merchant_upi }}</strong> · Ref: <code>{{ txn_ref }}</code>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card Panel -->
+                <div id="panel-Card" style="display: none; background: #fafafa; border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px; margin-top: 15px;">
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label style="font-size: 0.82rem; font-weight: 600;">Card Number</label>
+                        <input type="text" name="card_number" class="form-control" placeholder="4532 •••• •••• 8892" maxlength="19">
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div>
+                            <label style="font-size: 0.82rem; font-weight: 600;">Expiry</label>
+                            <input type="text" name="expiry" class="form-control" placeholder="MM/YY" maxlength="5">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.82rem; font-weight: 600;">CVV</label>
+                            <input type="password" name="cvv" class="form-control" placeholder="•••" maxlength="4">
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <button type="submit" id="btnSubmitAppt" class="btn btn-primary btn-block" style="padding: 14px; font-weight: 700; border-radius: 12px; background: linear-gradient(135deg, #2563eb, #1d4ed8); border: none;">
+                        <i class="fa-solid fa-check-circle"></i> Confirm Payment & Book (₹{{ '%.2f' % amount }})
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function chooseMethod(m) {
+    ['UPI', 'Card'].forEach(method => {
+        document.getElementById('opt-' + method).classList.toggle('selected', method === m);
+        document.getElementById('chk-' + method).style.display = (method === m) ? 'block' : 'none';
+        document.getElementById('radio-' + method).checked = (method === m);
+        document.getElementById('panel-' + method).style.display = (method === m) ? 'block' : 'none';
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,710 @@
+{% extends 'base.html' %}
+{% block title %}Consultation Payment & Checkout — Hospital QueueMS{% endblock %}
+
+{% block head %}
+<style>
+.checkout-container {
+    max-width: 1060px;
+    margin: 0 auto;
+    padding: 30px 15px 60px;
+}
+
+.checkout-grid {
+    display: grid;
+    grid-template-columns: 1.05fr 1.15fr;
+    gap: 28px;
+    align-items: start;
+}
+
+@media (max-width: 860px) {
+    .checkout-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.summary-card {
+    background: linear-gradient(145deg, #0d3b66 0%, #1e40af 100%);
+    color: #ffffff;
+    border-radius: 20px;
+    padding: 32px 28px;
+    box-shadow: 0 15px 35px rgba(13, 59, 102, 0.25);
+    position: relative;
+    overflow: hidden;
+}
+
+.summary-card::after {
+    content: '';
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 150px;
+    height: 150px;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    border-radius: 50%;
+}
+
+.summary-badge {
+    background: rgba(16, 185, 129, 0.2);
+    color: #6ee7b7;
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 11px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 0.92rem;
+}
+
+.summary-row .label {
+    color: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.summary-row .val {
+    font-weight: 600;
+    color: #ffffff;
+    text-align: right;
+}
+
+.total-box {
+    margin-top: 15px;
+    padding-top: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.total-box .total-label {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.total-box .total-val {
+    font-size: 1.7rem;
+    font-weight: 800;
+    color: #6ee7b7;
+}
+
+.payment-card {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 32px 28px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+}
+
+.method-option {
+    border: 2px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    margin-bottom: 12px;
+}
+
+.method-option:hover {
+    border-color: #3b82f6;
+    background: #f8fbff;
+}
+
+.method-option.selected {
+    border-color: #2563eb;
+    background: #eff6ff;
+    box-shadow: 0 0 0 1px #2563eb;
+}
+
+.method-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.upi-panel {
+    background: #fafafa;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 22px;
+    margin-top: 18px;
+    animation: fadeIn 0.3s ease;
+}
+
+.qr-wrapper {
+    background: #ffffff;
+    border: 2px dashed #cbd5e1;
+    border-radius: 14px;
+    padding: 18px;
+    text-align: center;
+    display: inline-block;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+}
+
+.qr-image {
+    width: 190px;
+    height: 190px;
+    border-radius: 8px;
+    display: block;
+    margin: 0 auto;
+}
+
+.gpay-btn {
+    background: linear-gradient(135deg, #1a73e8, #0d47a1);
+    color: #ffffff !important;
+    border: none;
+    border-radius: 12px;
+    padding: 14px 20px;
+    font-weight: 700;
+    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    text-decoration: none;
+    box-shadow: 0 6px 18px rgba(26, 115, 232, 0.35);
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.gpay-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgba(26, 115, 232, 0.45);
+}
+
+.upi-generic-btn {
+    background: #ffffff;
+    color: #0f172a;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 12px;
+    padding: 12px 18px;
+    font-weight: 600;
+    font-size: 0.92rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 8px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.upi-generic-btn:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+}
+
+.info-badge {
+    background: #f1f5f9;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-family: monospace;
+    font-size: 0.85rem;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+}
+
+.copy-btn {
+    background: none;
+    border: none;
+    color: #2563eb;
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 2px 6px;
+}
+
+.verification-box {
+    background: linear-gradient(135deg, #fefce8, #fef08a);
+    border: 1px solid #fde047;
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-top: 15px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.spinner-pulse {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(202, 138, 4, 0.3);
+    border-radius: 50%;
+    border-top-color: #ca8a04;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.security-footer {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 0.78rem;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="dashboard-section" style="min-height: 100vh; background: #f8fafc; padding: 35px 15px;">
+<div class="checkout-container">
+
+    <div class="db-welcome reveal" style="margin-bottom: 25px;">
+        <h2 style="display: flex; align-items: center; gap: 10px; margin: 0; color: #0d3b66;">
+            <i class="fa-solid fa-shield-halved" style="color: #10b981;"></i> Consultation Payment
+        </h2>
+        <p style="color: #64748b; margin-top: 4px;">Complete your outpatient consultation payment securely through Google Pay / UPI, Card, or Cash.</p>
+    </div>
+
+    <div class="checkout-grid">
+
+        <!-- LEFT: Consultation Summary Card -->
+        <div class="summary-card reveal">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+                <div>
+                    <span class="summary-badge">
+                        <i class="fa-solid fa-circle-check"></i> Consultation Completed
+                    </span>
+                    <h3 style="color: #fff; margin: 12px 0 2px; font-size: 1.4rem;">Bill Summary</h3>
+                </div>
+                <div style="background: rgba(255,255,255,0.15); padding: 6px 14px; border-radius: 10px; font-weight: 800; font-size: 1.1rem;">
+                    {{ token_label }}
+                </div>
+            </div>
+
+            <div class="summary-row">
+                <span class="label"><i class="fa-solid fa-user"></i> Patient Name</span>
+                <span class="val">{{ entry.patient.name }}</span>
+            </div>
+
+            <div class="summary-row">
+                <span class="label"><i class="fa-solid fa-hospital"></i> Hospital</span>
+                <span class="val" style="max-width: 55%; font-size: 0.88rem;">{{ hospital.name if hospital else 'PSG Hospitals' }}</span>
+            </div>
+
+            <div class="summary-row">
+                <span class="label"><i class="fa-solid fa-user-doctor"></i> Doctor</span>
+                <span class="val">{{ entry.doctor.name }}</span>
+            </div>
+
+            <div class="summary-row">
+                <span class="label"><i class="fa-solid fa-stethoscope"></i> Department</span>
+                <span class="val">{{ doctor_profile.specialty if doctor_profile else 'General Consultation' }}</span>
+            </div>
+
+            <div class="summary-row">
+                <span class="label"><i class="fa-regular fa-calendar-check"></i> Appointment ID</span>
+                <span class="val">#APT-{{ entry.appointment_id or entry.id }}</span>
+            </div>
+
+            <div class="summary-row">
+                <span class="label"><i class="fa-solid fa-ticket"></i> Token Number</span>
+                <span class="val">{{ token_label }}</span>
+            </div>
+
+            <div class="summary-row">
+                <span class="label"><i class="fa-solid fa-receipt"></i> Consultation Fee</span>
+                <span class="val">₹{{ '%.2f' % amount }}</span>
+            </div>
+
+            <div class="total-box">
+                <span class="total-label">Total Amount</span>
+                <span class="total-val">₹{{ '%.2f' % amount }}</span>
+            </div>
+
+            <div style="margin-top: 25px; padding: 14px; background: rgba(255,255,255,0.08); border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); font-size: 0.78rem; color: rgba(255,255,255,0.7); display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-lock" style="color: #6ee7b7; font-size: 1.1rem;"></i>
+                <span>Direct NPCI UPI integration. No sensitive PINs or passwords are ever requested.</span>
+            </div>
+        </div>
+
+        <!-- RIGHT: Payment Method Selection & Forms -->
+        <div class="payment-card reveal">
+            <h3 style="color: #0d3b66; margin: 0 0 6px; font-size: 1.3rem;">
+                <i class="fa-solid fa-wallet" style="color: #3b82f6;"></i> Select Payment Method
+            </h3>
+            <p style="color: #64748b; font-size: 0.88rem; margin: 0 0 20px;">Choose your preferred method to complete payment.</p>
+
+            <form id="paymentForm" action="{{ url_for('pay.process', entry_id=entry.id) }}" method="POST">
+                <input type="hidden" name="transaction_id" id="formTxnId" value="{{ txn_ref }}">
+                <input type="hidden" name="upi_ref_no" id="formUtrNo" value="">
+
+                <!-- 1. UPI / Google Pay Option -->
+                <div class="method-option selected" id="opt-UPI" onclick="selectMethod('UPI')">
+                    <input type="radio" name="payment_method" value="UPI" id="radio-UPI" checked style="display:none;">
+                    <div class="method-icon" style="background: linear-gradient(135deg, #1a73e8, #34a853);">
+                        <i class="fa-brands fa-google-pay" style="font-size: 1.6rem;"></i>
+                    </div>
+                    <div style="flex-grow: 1;">
+                        <div style="font-weight: 700; color: #0f172a; font-size: 0.98rem; display: flex; align-items: center; gap: 6px;">
+                            UPI / Google Pay
+                            <span style="background: #e0f2fe; color: #0284c7; font-size: 0.7rem; padding: 2px 7px; border-radius: 12px; font-weight: 700;">Instant</span>
+                        </div>
+                        <div style="font-size: 0.8rem; color: #64748b; margin-top: 2px;">Google Pay, PhonePe, Paytm, BHIM UPI</div>
+                    </div>
+                    <i class="fa-solid fa-circle-check" style="color: #2563eb; font-size: 1.2rem;" id="check-UPI"></i>
+                </div>
+
+                <!-- 2. Debit / Credit Card Option -->
+                <div class="method-option" id="opt-Card" onclick="selectMethod('Card')">
+                    <input type="radio" name="payment_method" value="Card" id="radio-Card" style="display:none;">
+                    <div class="method-icon" style="background: linear-gradient(135deg, #6366f1, #3b82f6);">
+                        <i class="fa-solid fa-credit-card"></i>
+                    </div>
+                    <div style="flex-grow: 1;">
+                        <div style="font-weight: 700; color: #0f172a; font-size: 0.98rem;">Debit / Credit Card</div>
+                        <div style="font-size: 0.8rem; color: #64748b; margin-top: 2px;">Visa, Mastercard, RuPay cards</div>
+                    </div>
+                    <i class="fa-solid fa-circle-check" style="color: #2563eb; font-size: 1.2rem; display:none;" id="check-Card"></i>
+                </div>
+
+                <!-- 3. Cash at Counter Option -->
+                <div class="method-option" id="opt-Cash" onclick="selectMethod('Cash')">
+                    <input type="radio" name="payment_method" value="Cash" id="radio-Cash" style="display:none;">
+                    <div class="method-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
+                        <i class="fa-solid fa-money-bill-wave"></i>
+                    </div>
+                    <div style="flex-grow: 1;">
+                        <div style="font-weight: 700; color: #0f172a; font-size: 0.98rem;">Cash at Hospital Counter</div>
+                        <div style="font-size: 0.8rem; color: #64748b; margin-top: 2px;">Pay directly at hospital billing desk</div>
+                    </div>
+                    <i class="fa-solid fa-circle-check" style="color: #2563eb; font-size: 1.2rem; display:none;" id="check-Cash"></i>
+                </div>
+
+                <!-- ================= PANEL 1: UPI / GOOGLE PAY DETAILS ================= -->
+                <div id="panel-UPI" class="upi-panel">
+                    
+                    <!-- Mobile View: Direct Google Pay deep link button -->
+                    <div id="mobileUpiSection" style="margin-bottom: 20px;">
+                        <div style="text-align: center; margin-bottom: 12px;">
+                            <span style="font-size: 0.78rem; text-transform: uppercase; font-weight: 700; color: #64748b; letter-spacing: 0.5px;">
+                                Quick Mobile Payment
+                            </span>
+                        </div>
+
+                        <!-- Google Pay Deep Link Button -->
+                        <a href="{{ gpay_url }}" id="btnGooglePay" class="gpay-btn" onclick="handleUpiIntentClick('Google Pay')">
+                            <i class="fa-brands fa-google-pay" style="font-size: 1.5rem;"></i>
+                            Pay with Google Pay (₹{{ '%.2f' % amount }})
+                        </a>
+
+                        <!-- Fallback / Any UPI App Link -->
+                        <a href="{{ upi_url }}" id="btnAnyUpi" class="upi-generic-btn" onclick="handleUpiIntentClick('UPI App')">
+                            <i class="fa-solid fa-mobile-screen-button" style="color: #2563eb;"></i>
+                            Pay with Any Other UPI App (PhonePe / Paytm / BHIM)
+                        </a>
+                    </div>
+
+                    <!-- Desktop & QR Code Section -->
+                    <div id="desktopQrSection" style="text-align: center; padding-top: 10px; border-top: 1px dashed #e2e8f0;">
+                        <p style="margin: 0 0 12px; font-weight: 600; color: #334155; font-size: 0.9rem;">
+                            <i class="fa-solid fa-qrcode" style="color: #2563eb;"></i> Scan this QR code using Google Pay or another UPI app
+                        </p>
+
+                        <div class="qr-wrapper">
+                            <img src="{{ qr_code_data }}" alt="UPI QR Code" class="qr-image" id="qrImg">
+                            <div style="margin-top: 8px; font-size: 0.75rem; color: #64748b; font-weight: 600;">
+                                <i class="fa-solid fa-camera"></i> Point Google Pay Scanner
+                            </div>
+                        </div>
+
+                        <!-- Merchant & Transaction Reference Details -->
+                        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-top: 15px; text-align: left; font-size: 0.85rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <span style="color: #64748b;">Hospital UPI ID:</span>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span class="info-badge" id="valUpiId">{{ merchant_upi }}</span>
+                                    <button type="button" class="copy-btn" onclick="copyText('{{ merchant_upi }}', this)" title="Copy UPI ID">
+                                        <i class="fa-regular fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <span style="color: #64748b;">Amount:</span>
+                                <strong style="color: #166534; font-size: 0.95rem;">₹{{ '%.2f' % amount }}</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: #64748b;">Payment Ref:</span>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span class="info-badge" style="font-size: 0.78rem;">{{ txn_ref }}</span>
+                                    <button type="button" class="copy-btn" onclick="copyText('{{ txn_ref }}', this)" title="Copy Ref">
+                                        <i class="fa-regular fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Verification Status / Awaiting Box -->
+                    <div id="verificationSection" style="margin-top: 18px;">
+                        <div class="verification-box" id="awaitingBox" style="display: none;">
+                            <div class="spinner-pulse"></div>
+                            <div>
+                                <strong style="color: #854d0e; font-size: 0.88rem; display: block;">Payment initiated — awaiting verification</strong>
+                                <span style="color: #a16207; font-size: 0.78rem;">Please approve the payment in your Google Pay / UPI app.</span>
+                            </div>
+                        </div>
+
+                        <!-- Manual 12-digit UTR verification (optional) -->
+                        <div style="margin-top: 14px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px;">
+                            <label for="inputUtr" style="font-size: 0.82rem; font-weight: 600; color: #334155; display: block; margin-bottom: 6px;">
+                                <i class="fa-solid fa-key" style="color: #3b82f6;"></i> Enter UPI Reference / UTR Number (from Google Pay receipt):
+                            </label>
+                            <div style="display: flex; gap: 8px;">
+                                <input type="text" id="inputUtr" class="form-control" placeholder="e.g., 426189012345 (12 digits)" maxlength="16" style="padding: 10px 14px; border-radius: 8px; font-family: monospace; font-size: 0.9rem;">
+                                <button type="button" id="btnVerifyUtr" class="btn btn-primary btn-sm" onclick="verifyUpiStatus()" style="white-space: nowrap; padding: 10px 16px; border-radius: 8px;">
+                                    <i class="fa-solid fa-check-circle"></i> Verify & Confirm
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= PANEL 2: CARD DETAILS ================= -->
+                <div id="panel-Card" style="display: none; background: #fafafa; border: 1px solid #e2e8f0; border-radius: 16px; padding: 22px; margin-top: 18px;">
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label style="font-weight: 600; font-size: 0.85rem; color: #334155;">Cardholder Name</label>
+                        <input type="text" name="cardholder" class="form-control" value="{{ current_user.name }}" placeholder="Name on card" style="border-radius: 8px; padding: 10px 14px;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label style="font-weight: 600; font-size: 0.85rem; color: #334155;">Card Number</label>
+                        <input type="text" name="card_number" class="form-control" placeholder="4532 •••• •••• 8892" maxlength="19" oninput="formatCard(this)" style="border-radius: 8px; padding: 10px 14px; font-family: monospace;">
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px;">
+                        <div>
+                            <label style="font-weight: 600; font-size: 0.85rem; color: #334155;">Expiry Date</label>
+                            <input type="text" name="expiry" class="form-control" placeholder="MM/YY" maxlength="5" style="border-radius: 8px; padding: 10px 14px;">
+                        </div>
+                        <div>
+                            <label style="font-weight: 600; font-size: 0.85rem; color: #334155;">CVV</label>
+                            <input type="password" name="cvv" class="form-control" placeholder="•••" maxlength="4" style="border-radius: 8px; padding: 10px 14px;">
+                        </div>
+                    </div>
+                    <p style="font-size: 0.75rem; color: #64748b; margin: 6px 0 0;">Card CVV and bank credentials are encrypted and never stored on server.</p>
+                </div>
+
+                <!-- ================= PANEL 3: CASH DETAILS ================= -->
+                <div id="panel-Cash" style="display: none; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 16px; padding: 22px; margin-top: 18px; text-align: center;">
+                    <i class="fa-solid fa-money-bill-1-wave" style="color: #10b981; font-size: 2.2rem; margin-bottom: 10px;"></i>
+                    <h4 style="color: #166534; margin: 0 0 6px;">Hospital Billing Counter Payment</h4>
+                    <p style="color: #15803d; font-size: 0.88rem; margin: 0 0 12px;">
+                        Please present your Token <strong>{{ token_label }}</strong> at the cashier desk to complete cash payment.
+                    </p>
+                    <span style="display: inline-block; background: #dcfce7; color: #166534; padding: 4px 14px; border-radius: 20px; font-weight: 700; font-size: 0.8rem;">
+                        Amount to Pay: ₹{{ '%.2f' % amount }}
+                    </span>
+                </div>
+
+                <!-- Privacy & Security Disclaimer -->
+                <div class="security-footer">
+                    <i class="fa-solid fa-shield-halved" style="color: #10b981; font-size: 1.1rem; flex-shrink: 0;"></i>
+                    <span>
+                        <strong>Security Guarantee:</strong> We strictly NEVER ask for or store UPI PIN, OTP, Bank Password, Google Pay Password, or Card CVV.
+                    </span>
+                </div>
+
+                <!-- Main Submit Button -->
+                <div style="margin-top: 22px;">
+                    <button type="submit" id="btnMainSubmit" class="btn btn-primary btn-block" style="padding: 15px; font-size: 1.05rem; font-weight: 700; border-radius: 12px; background: linear-gradient(135deg, #2563eb, #1d4ed8); border: none; box-shadow: 0 6px 20px rgba(37,99,235,0.35);">
+                        <i class="fa-solid fa-lock"></i> Complete Payment — ₹{{ '%.2f' % amount }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentMethod = 'UPI';
+let initiatedPaymentId = null;
+let pollTimer = null;
+
+function selectMethod(method) {
+    currentMethod = method;
+    ['UPI', 'Card', 'Cash'].forEach(m => {
+        const opt = document.getElementById('opt-' + m);
+        const chk = document.getElementById('check-' + m);
+        const radio = document.getElementById('radio-' + m);
+        const panel = document.getElementById('panel-' + m);
+
+        if (m === method) {
+            opt.classList.add('selected');
+            chk.style.display = 'block';
+            radio.checked = true;
+            if (panel) panel.style.display = 'block';
+        } else {
+            opt.classList.remove('selected');
+            chk.style.display = 'none';
+            radio.checked = false;
+            if (panel) panel.style.display = 'none';
+        }
+    });
+
+    const submitBtn = document.getElementById('btnMainSubmit');
+    if (method === 'UPI') {
+        submitBtn.innerHTML = '<i class="fa-solid fa-circle-check"></i> I have paid via Google Pay / UPI — Confirm';
+    } else if (method === 'Card') {
+        submitBtn.innerHTML = '<i class="fa-solid fa-credit-card"></i> Pay ₹{{ "%.2f" % amount }} with Card';
+    } else {
+        submitBtn.innerHTML = '<i class="fa-solid fa-money-bill-wave"></i> Confirm Cash Payment at Counter';
+    }
+}
+
+// Handle clicking on Google Pay or UPI App intent
+function handleUpiIntentClick(appName) {
+    document.getElementById('awaitingBox').style.display = 'flex';
+    
+    // Call initiate API to record intent
+    fetch("{{ url_for('pay.initiate_payment', entry_id=entry.id) }}", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transaction_id: "{{ txn_ref }}" })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.payment_id) {
+            initiatedPaymentId = data.payment_id;
+            // Start polling verification in background
+            startVerificationPolling(data.payment_id);
+        }
+    })
+    .catch(err => console.error("Initiate error:", err));
+}
+
+// Background polling for payment status verification
+function startVerificationPolling(paymentId) {
+    if (pollTimer) clearInterval(pollTimer);
+    let attempts = 0;
+    
+    pollTimer = setInterval(() => {
+        attempts++;
+        if (attempts > 30) {
+            clearInterval(pollTimer);
+            return;
+        }
+        
+        fetch(`/payment/api/verify/${paymentId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ check_only: true })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success && data.receipt_url) {
+                clearInterval(pollTimer);
+                window.location.href = data.receipt_url;
+            }
+        })
+        .catch(err => console.error("Poll error:", err));
+    }, 4000);
+}
+
+// Verification via entered UTR / Reference
+function verifyUpiStatus() {
+    const utrVal = document.getElementById('inputUtr').value.trim();
+    const btn = document.getElementById('btnVerifyUtr');
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying...';
+    document.getElementById('awaitingBox').style.display = 'flex';
+    
+    // First ensure payment is initiated
+    fetch("{{ url_for('pay.initiate_payment', entry_id=entry.id) }}", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transaction_id: "{{ txn_ref }}" })
+    })
+    .then(r => r.json())
+    .then(data => {
+        const payId = data.payment_id;
+        document.getElementById('formUtrNo').value = utrVal || "{{ txn_ref }}";
+        
+        return fetch(`/payment/api/verify/${payId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ upi_ref_no: utrVal || "{{ txn_ref }}" })
+        });
+    })
+    .then(r => r.json())
+    .then(res => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-check-circle"></i> Verify & Confirm';
+        
+        if (res.success && res.receipt_url) {
+            window.location.href = res.receipt_url;
+        } else {
+            alert(res.message || "Payment initiated — awaiting verification from bank.");
+        }
+    })
+    .catch(err => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-check-circle"></i> Verify & Confirm';
+        console.error("Verification error:", err);
+        // Fallback form submit
+        document.getElementById('paymentForm').submit();
+    });
+}
+
+// Copy helper
+function copyText(text, btn) {
+    navigator.clipboard.writeText(text).then(() => {
+        const orig = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-check" style="color:#10b981;"></i>';
+        setTimeout(() => btn.innerHTML = orig, 2000);
+    });
+}
+
+function formatCard(input) {
+    let v = input.value.replace(/\D/g, '');
+    let formatted = '';
+    for (let i = 0; i < v.length; i++) {
+        if (i > 0 && i % 4 === 0) formatted += ' ';
+        formatted += v[i];
+    }
+    input.value = formatted;
+}
+
+// Initialize UPI by default
+document.addEventListener('DOMContentLoaded', () => {
+    selectMethod('UPI');
+});
+</script>
+{% endblock %}

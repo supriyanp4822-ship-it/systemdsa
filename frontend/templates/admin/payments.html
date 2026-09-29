@@ -1,0 +1,112 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Payment Transactions — Hospital QueueMS Admin{% endblock %}
+
+{% block content %}
+<div class="admin-topbar">
+    <div>
+        <h2 style="margin: 0; color: #0d3b66; font-size: 1.6rem; font-weight: 800;">
+            <i class="fa-solid fa-credit-card" style="color: #3b82f6;"></i> Payment Management
+        </h2>
+        <p style="margin: 3px 0 0; color: #64748b; font-size: 0.9rem;">
+            Audit consultation fees, Google Pay / UPI transactions, cards, and counter receipts.
+        </p>
+    </div>
+
+    <div>
+        <div style="background: linear-gradient(135deg, #0d3b66, #1e40af); color: #fff; padding: 10px 18px; border-radius: 12px; font-weight: 700; font-size: 0.95rem;">
+            Total Revenue: <span style="color: #6ee7b7; font-size: 1.15rem; font-weight: 900;">₹{{ '%.2f' % total_revenue }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="admin-card">
+    <!-- Filter Toolbar -->
+    <form method="GET" action="{{ url_for('admin.payments_list') }}" style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; background: #f8fafc; padding: 14px 16px; border-radius: 12px; border: 1px solid #edf2f7; align-items: center;">
+        <div style="flex: 1; min-width: 200px;">
+            <input type="text" name="search" class="form-control" placeholder="Search by Receipt No, Txn ID, or Patient..." value="{{ search }}" style="padding: 8px 12px; border-radius: 8px;">
+        </div>
+
+        <div>
+            <select name="method" class="form-control" style="padding: 8px 12px; border-radius: 8px;">
+                <option value="">All Payment Methods</option>
+                <option value="UPI" {% if method_filter == 'UPI' %}selected{% endif %}>UPI / Google Pay</option>
+                <option value="Card" {% if method_filter == 'Card' %}selected{% endif %}>Debit / Credit Card</option>
+                <option value="Cash" {% if method_filter == 'Cash' %}selected{% endif %}>Cash at Counter</option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-sm" style="border-radius: 8px; padding: 8px 16px;">
+            <i class="fa-solid fa-magnifying-glass"></i> Filter
+        </button>
+        {% if search or method_filter %}
+            <a href="{{ url_for('admin.payments_list') }}" class="btn btn-outline btn-sm" style="border-radius: 8px; padding: 8px 12px;">Reset</a>
+        {% endif %}
+    </form>
+
+    <div class="table-responsive">
+        <table class="table-admin">
+            <thead>
+                <tr>
+                    <th>Receipt Number</th>
+                    <th>Transaction ID</th>
+                    <th>Patient</th>
+                    <th>Appointment ID</th>
+                    <th>Hospital</th>
+                    <th>Amount</th>
+                    <th>Payment Method</th>
+                    <th>Payment Status</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pay in payments %}
+                {% set dp = pay.doctor.doctor_profile if pay.doctor else None %}
+                <tr>
+                    <td>
+                        <strong style="color: #0f172a; font-family: monospace;">{{ pay.receipt_no }}</strong>
+                    </td>
+                    <td>
+                        <code style="font-size: 0.8rem; color: #2563eb;">{{ pay.transaction_id or '—' }}</code>
+                    </td>
+                    <td>
+                        <strong style="color: #0d3b66;">{{ pay.patient.name }}</strong>
+                    </td>
+                    <td>
+                        <div>#APT-{{ pay.appointment_id or '—' }}</div>
+                        {% if pay.queue_entry_id %}
+                            <span style="font-size: 0.75rem; color: #64748b;">Token T{{ '%03d' % pay.queue_entry_id }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span style="font-size: 0.82rem; color: #475569;">{{ dp.hospital.name if dp and dp.hospital else 'Main Hospital' }}</span>
+                    </td>
+                    <td>
+                        <strong style="color: #059669; font-size: 0.95rem;">₹{{ '%.2f' % pay.amount }}</strong>
+                    </td>
+                    <td>
+                        <span class="badge badge-{% if pay.payment_method == 'UPI' %}primary{% elif pay.payment_method == 'Card' %}info{% else %}secondary{% endif %}">
+                            {{ 'UPI / GPay' if pay.payment_method == 'UPI' else pay.payment_method }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge badge-{% if pay.status == 'paid' %}success{% elif pay.status == 'initiated' %}warning{% else %}secondary{% endif %}">
+                            {{ pay.status | upper }}
+                        </span>
+                    </td>
+                    <td>
+                        <span style="font-size: 0.82rem; color: #64748b;">
+                            {{ pay.payment_date.strftime('%d %b %Y, %I:%M %p') }}
+                        </span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" style="text-align: center; color: #94a3b8; padding: 40px;">No payment records found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

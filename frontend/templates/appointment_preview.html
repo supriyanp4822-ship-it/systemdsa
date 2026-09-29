@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+
+{% block title %}Confirm Appointment - Hospital Queue Management System{% endblock %}
+
+{% block head %}
+<style>
+.preview-page {
+  padding: 100px 20px 60px;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f0f4ff 0%, #e8f5e9 100%);
+  display: flex; align-items: center; justify-content: center;
+}
+
+.preview-card {
+  max-width: 620px; width: 100%;
+  background: #fff; border-radius: 24px;
+  box-shadow: 0 12px 48px rgba(13,59,102,.12);
+  overflow: hidden;
+  animation: popIn .5s cubic-bezier(.34,1.56,.64,1);
+}
+
+.preview-header {
+  background: linear-gradient(135deg, #0d3b66 0%, #1a5276 50%, #6366f1 100%);
+  padding: 32px 36px 24px;
+  text-align: center; color: #fff;
+}
+.preview-icon {
+  width: 68px; height: 68px; border-radius: 50%;
+  background: rgba(255,255,255,.2); backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 14px; font-size: 1.8rem;
+}
+.preview-header h2 { margin: 0 0 6px; font-size: 1.4rem; font-weight: 800; }
+.preview-header p  { margin: 0; opacity: .85; font-size: .88rem; }
+
+.preview-body { padding: 28px 32px; }
+
+/* AI Wait box */
+.ai-wait-box {
+  display: flex; align-items: center; gap: 14px;
+  background: linear-gradient(135deg, #f0f4ff, #e0e7ff);
+  border: 1.5px solid #c7d2fe; border-radius: 14px;
+  padding: 16px 20px; margin-bottom: 24px;
+}
+.ai-wait-box .ai-icon {
+  width: 48px; height: 48px; border-radius: 12px;
+  background: linear-gradient(135deg,#6366f1,#4338ca);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; color: #fff; flex-shrink: 0;
+}
+.ai-wait-box .ai-label { font-size: .75rem; color: #64748b; margin-bottom: 2px; }
+.ai-wait-box .ai-value { font-size: 1.6rem; font-weight: 800; color: #4338ca; }
+.ai-wait-box .ai-note  { font-size: .75rem; color: #6366f1; }
+
+/* Detail grid */
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+.detail-item {
+  background: #f8fafc; border-radius: 12px; padding: 14px 16px;
+  border: 1px solid #e2e8f0;
+}
+.detail-item .label { display: block; font-size: .74rem; color: #94a3b8; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 4px; }
+.detail-item .value { font-size: .95rem; font-weight: 700; color: #1e293b; }
+.detail-item .value i { margin-right: 6px; color: #1a5276; }
+
+/* Warning box */
+.warn-box {
+  background: #fefce8; border: 1px solid #fde68a; border-radius: 10px;
+  padding: 12px 16px; margin-bottom: 20px;
+  font-size: .82rem; color: #92400e;
+  display: flex; align-items: flex-start; gap: 10px;
+}
+.warn-box i { color: #f59e0b; margin-top: 1px; flex-shrink: 0; }
+
+/* Actions */
+.preview-actions { display: flex; gap: 12px; }
+.btn-confirm {
+  flex: 2; padding: 14px; border: none; border-radius: 12px;
+  background: linear-gradient(135deg,#0d3b66,#1a5276); color: #fff;
+  font-size: 1rem; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: transform .15s, box-shadow .2s;
+}
+.btn-confirm:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(13,59,102,.3); }
+
+.btn-back {
+  flex: 1; padding: 14px; border-radius: 12px;
+  background: #f1f5f9; color: #334155; border: 1.5px solid #e2e8f0;
+  font-size: 1rem; font-weight: 600; cursor: pointer;
+  text-align: center; text-decoration: none;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: background .2s;
+}
+.btn-back:hover { background: #e2e8f0; }
+
+@keyframes popIn { from { opacity:0; transform: scale(.9) translateY(20px); } to { opacity:1; transform: scale(1) translateY(0); } }
+@media (max-width: 500px) {
+  .detail-grid { grid-template-columns: 1fr; }
+  .preview-actions { flex-direction: column-reverse; }
+  .preview-body { padding: 20px; }
+  .preview-header { padding: 24px 20px 18px; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="preview-page">
+  <div class="preview-card">
+    <div class="preview-header">
+      <div class="preview-icon"><i class="fa-solid fa-calendar-check"></i></div>
+      <h2>Confirm Your Appointment</h2>
+      <p>Please review the details below before confirming.</p>
+    </div>
+
+    <div class="preview-body">
+
+      <!-- AI Wait Time -->
+      <div class="ai-wait-box">
+        <div class="ai-icon"><i class="fa-solid fa-brain"></i></div>
+        <div>
+          <div class="ai-label">AI Estimated Waiting Time (if you check in now)</div>
+          <div class="ai-value">~{{ ai_wait }} minutes</div>
+          <div class="ai-note">Based on current queue — updates in real-time</div>
+        </div>
+      </div>
+
+      <!-- Details Grid -->
+      <div class="detail-grid">
+        <div class="detail-item">
+          <span class="label">Patient</span>
+          <span class="value"><i class="fa-regular fa-user"></i> {{ current_user.name }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Hospital</span>
+          <span class="value"><i class="fa-solid fa-hospital"></i> {{ hospital.name if hospital else 'N/A' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Department</span>
+          <span class="value"><i class="fa-solid fa-building"></i> {{ dept_name }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Doctor</span>
+          <span class="value"><i class="fa-solid fa-user-doctor"></i> {{ doctor.name }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Date</span>
+          <span class="value"><i class="fa-regular fa-calendar"></i> {{ appt_date.strftime('%d %b, %Y') }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Time Slot</span>
+          <span class="value"><i class="fa-regular fa-clock"></i> {{ time_slot }}</span>
+        </div>
+        {% if dp and dp.room_number %}
+        <div class="detail-item">
+          <span class="label">Consultation Room</span>
+          <span class="value"><i class="fa-solid fa-door-open"></i> Room {{ dp.room_number }}</span>
+        </div>
+        {% endif %}
+        {% if dp %}
+        <div class="detail-item">
+          <span class="label">Consultation Fee</span>
+          <span class="value" style="color:#0d3b66;"><i class="fa-solid fa-indian-rupee-sign"></i> {{ '%.2f' % dp.consultation_fee }}</span>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="warn-box">
+        <i class="fa-solid fa-circle-info"></i>
+        <span>After confirming, you will be taken to the payment page. Your slot will be reserved after successful payment.</span>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="preview-actions">
+        <a href="/appointments" class="btn-back">
+          <i class="fa-solid fa-arrow-left"></i> Go Back
+        </a>
+        <form method="POST" action="/appointments/book-confirmed" style="flex:2; display:flex;">
+          <input type="hidden" name="doctor_id" value="{{ doctor.id }}">
+          <input type="hidden" name="date" value="{{ appt_date.strftime('%Y-%m-%d') }}">
+          <input type="hidden" name="time_slot" value="{{ time_slot }}">
+          <button type="submit" class="btn-confirm" style="width:100%;">
+            <i class="fa-solid fa-circle-check"></i> Confirm Appointment
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</section>
+{% endblock %}

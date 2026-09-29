@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% block title %}All Payments & Receipts — Hospital QueueMS{% endblock %}
+
+{% block content %}
+<section class="dashboard-section" style="min-height: 100vh; background: #f8fafc; padding: 40px 20px;">
+    <div class="dashboard-container" style="max-width: 1200px; margin: 0 auto;">
+        
+        <div class="db-welcome reveal" style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom: 30px; flex-wrap: wrap; gap: 20px;">
+            <div>
+                <h2><i class="fa-solid fa-receipt" style="color: #6366f1; margin-right: 10px;"></i> Payments & Transactions</h2>
+                <p style="color: #64748b; margin-top: 6px;">Manage consultation fees, payment verification, and receipts</p>
+            </div>
+            <div style="background: linear-gradient(135deg, #0d3b66, #1e40af); color: #fff; padding: 18px 26px; border-radius: 16px; box-shadow: 0 10px 25px rgba(13,59,102,0.2);">
+                <div style="font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.05em; color: rgba(255,255,255,0.75);">Total Revenue</div>
+                <div style="font-size: 1.8rem; font-weight: 800; color: #6ee7b7; margin-top: 4px;">₹{{ '%.2f' % total_revenue }}</div>
+            </div>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="db-card reveal" style="padding: 20px 25px; margin-bottom: 25px; border-radius: 16px;">
+            <form method="GET" action="{{ url_for('pay.admin_payments') }}" style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+                <div style="flex: 1; min-width: 240px; position: relative;">
+                    <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8;"></i>
+                    <input type="text" name="search" value="{{ search or '' }}" placeholder="Search by Receipt No, Txn ID, or Patient Name..."
+                           class="form-control" style="padding-left: 40px; border-radius: 10px; border: 1px solid #cbd5e1;">
+                </div>
+                <div style="min-width: 180px;">
+                    <select name="method" class="form-control" style="border-radius: 10px; border: 1px solid #cbd5e1;">
+                        <option value="">All Payment Methods</option>
+                        <option value="UPI" {% if method_filter == 'UPI' %}selected{% endif %}>UPI / GPay / PhonePe</option>
+                        <option value="Card" {% if method_filter == 'Card' %}selected{% endif %}>Debit / Credit Card</option>
+                        <option value="Cash" {% if method_filter == 'Cash' %}selected{% endif %}>Cash at Counter</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary" style="border-radius: 10px; padding: 10px 20px;">
+                    <i class="fa-solid fa-filter"></i> Filter
+                </button>
+                {% if search or method_filter %}
+                <a href="{{ url_for('pay.admin_payments') }}" class="btn btn-outline" style="border-radius: 10px; padding: 10px 16px;">
+                    Clear
+                </a>
+                {% endif %}
+            </form>
+        </div>
+
+        <!-- Payments Table -->
+        <div class="db-card reveal" style="border-radius: 16px; overflow: hidden; padding: 0;">
+            <div class="table-responsive">
+                <table class="table" style="margin-bottom: 0; width: 100%; border-collapse: collapse;">
+                    <thead style="background: #f1f5f9;">
+                        <tr>
+                            <th style="padding: 16px 20px; font-weight: 600; color: #475569; font-size: 0.85rem; text-transform: uppercase;">Receipt / Txn ID</th>
+                            <th style="padding: 16px 20px; font-weight: 600; color: #475569; font-size: 0.85rem; text-transform: uppercase;">Patient</th>
+                            <th style="padding: 16px 20px; font-weight: 600; color: #475569; font-size: 0.85rem; text-transform: uppercase;">Doctor</th>
+                            <th style="padding: 16px 20px; font-weight: 600; color: #475569; font-size: 0.85rem; text-transform: uppercase;">Method</th>
+                            <th style="padding: 16px 20px; font-weight: 600; color: #475569; font-size: 0.85rem; text-transform: uppercase;">Amount</th>
+                            <th style="padding: 16px 20px; font-weight: 600; color: #475569; font-size: 0.85rem; text-transform: uppercase;">Date & Time</th>
+                            <th style="padding: 16px 20px; font-weight: 600; color: #475569; font-size: 0.85rem; text-transform: uppercase; text-align: right;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pay in payments %}
+                        <tr style="border-top: 1px solid #e2e8f0; transition: background 0.15s;">
+                            <td style="padding: 16px 20px;">
+                                <div style="font-weight: 700; color: #0d3b66;">{{ pay.receipt_no }}</div>
+                                <div style="font-size: 0.75rem; color: #94a3b8; font-family: monospace;">{{ pay.transaction_id or 'N/A' }}</div>
+                            </td>
+                            <td style="padding: 16px 20px;">
+                                <div style="font-weight: 600; color: #1e293b;">{{ pay.patient.name }}</div>
+                                <div style="font-size: 0.78rem; color: #64748b;">{{ pay.patient.email }}</div>
+                            </td>
+                            <td style="padding: 16px 20px;">
+                                <div style="font-weight: 600; color: #1e293b;">{{ pay.doctor.name }}</div>
+                                <div style="font-size: 0.78rem; color: #64748b;">{{ pay.doctor.doctor_profile.specialty if pay.doctor.doctor_profile else 'General' }}</div>
+                            </td>
+                            <td style="padding: 16px 20px;">
+                                {% if pay.payment_method == 'UPI' %}
+                                <span class="badge" style="background: rgba(249,115,22,0.12); color: #ea580c; border: 1px solid rgba(249,115,22,0.3); font-weight: 600; padding: 4px 10px; border-radius: 8px;">
+                                    <i class="fa-solid fa-mobile-screen-button"></i> UPI
+                                </span>
+                                {% elif pay.payment_method == 'Card' %}
+                                <span class="badge" style="background: rgba(59,130,246,0.12); color: #2563eb; border: 1px solid rgba(59,130,246,0.3); font-weight: 600; padding: 4px 10px; border-radius: 8px;">
+                                    <i class="fa-solid fa-credit-card"></i> Card
+                                </span>
+                                {% else %}
+                                <span class="badge" style="background: rgba(16,185,129,0.12); color: #059669; border: 1px solid rgba(16,185,129,0.3); font-weight: 600; padding: 4px 10px; border-radius: 8px;">
+                                    <i class="fa-solid fa-money-bill-1"></i> Cash
+                                </span>
+                                {% endif %}
+                                {% if pay.upi_id %}
+                                <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 3px;">{{ pay.upi_id }}</div>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 16px 20px; font-weight: 700; color: #0f172a; font-size: 1rem;">
+                                ₹{{ '%.2f' % pay.amount }}
+                            </td>
+                            <td style="padding: 16px 20px; font-size: 0.85rem; color: #64748b;">
+                                {{ pay.payment_date.strftime('%d %b %Y, %I:%M %p') }}
+                            </td>
+                            <td style="padding: 16px 20px; text-align: right;">
+                                <a href="{{ url_for('pay.receipt', payment_id=pay.id) }}" target="_blank"
+                                   class="btn btn-sm btn-outline" style="border-radius: 8px; font-size: 0.8rem; padding: 6px 12px;">
+                                    <i class="fa-solid fa-receipt"></i> View Receipt
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" style="text-align: center; color: #94a3b8; padding: 50px;">
+                                <i class="fa-solid fa-inbox" style="font-size: 2.5rem; margin-bottom: 12px; color: #cbd5e1; display: block;"></i>
+                                No payment records found matching your filters.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div style="margin-top: 25px;">
+            <a href="{{ url_for('admin.index') }}" class="btn btn-secondary btn-sm" style="border-radius: 8px;">
+                <i class="fa-solid fa-arrow-left"></i> Back to Admin Dashboard
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %}

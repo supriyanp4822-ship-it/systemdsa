@@ -1,0 +1,153 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Patient Management — Hospital QueueMS Admin{% endblock %}
+
+{% block content %}
+<div class="admin-topbar">
+    <div>
+        <h2 style="margin: 0; color: #0d3b66; font-size: 1.6rem; font-weight: 800;">
+            <i class="fa-solid fa-user-group" style="color: #3b82f6;"></i> Patient Management
+        </h2>
+        <p style="margin: 3px 0 0; color: #64748b; font-size: 0.9rem;">
+            View registered patients, appointment records, and account statuses.
+        </p>
+    </div>
+
+    <div>
+        <span class="badge badge-primary" style="padding: 8px 14px; font-size: 0.85rem;">
+            {{ patients|length }} Registered Patients
+        </span>
+    </div>
+</div>
+
+<div class="admin-card">
+    <!-- Search Bar -->
+    <form method="GET" action="{{ url_for('admin.patients') }}" style="display: flex; gap: 10px; margin-bottom: 20px; max-width: 500px;">
+        <input type="text" name="search" class="form-control" placeholder="Search by name, email, or username..." value="{{ search }}" style="padding: 10px 14px; border-radius: 8px;">
+        <button type="submit" class="btn btn-primary btn-sm" style="border-radius: 8px; padding: 0 18px;">
+            <i class="fa-solid fa-magnifying-glass"></i> Search
+        </button>
+        {% if search %}
+            <a href="{{ url_for('admin.patients') }}" class="btn btn-outline btn-sm" style="border-radius: 8px;">Clear</a>
+        {% endif %}
+    </form>
+
+    <div class="table-responsive">
+        <table class="table-admin">
+            <thead>
+                <tr>
+                    <th>Patient ID</th>
+                    <th>Patient Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Registered Date</th>
+                    <th>Appointment Count</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in patients %}
+                {% set p = item.user %}
+                <tr>
+                    <td><strong>#PAT-{{ p.id }}</strong></td>
+                    <td>
+                        <strong style="color: #0f172a;">{{ p.name }}</strong>
+                        <div style="font-size: 0.78rem; color: #64748b;">@{{ p.username }}</div>
+                    </td>
+                    <td>{{ p.email }}</td>
+                    <td>{{ p.phone if p.phone else '—' }}</td>
+                    <td>{{ p.created_at.strftime('%d %b %Y') if p.created_at else '—' }}</td>
+                    <td>
+                        <span class="badge badge-info">{{ item.appt_count }} Bookings</span>
+                    </td>
+                    <td>
+                        <span class="badge badge-{% if p.is_active_user %}success{% else %}danger{% endif %}">
+                            {{ 'Active' if p.is_active_user else 'Deactivated' }}
+                        </span>
+                    </td>
+                    <td style="text-align: right; white-space: nowrap;">
+                        <button type="button" class="btn btn-outline btn-xs" onclick="viewPatient('{{ p.name|escape }}', '{{ p.email|escape }}', '{{ p.phone or 'Not Provided' }}', '{{ p.username|escape }}', '{{ p.created_at.strftime('%d %b %Y') if p.created_at else '—' }}', '{{ item.appt_count }}', '{{ 'Active' if p.is_active_user else 'Deactivated' }}')" title="View Patient Details">
+                            <i class="fa-solid fa-eye"></i> View
+                        </button>
+                        <form method="POST" action="{{ url_for('admin.toggle_patient', user_id=p.id) }}" style="display:inline; margin-left: 4px;">
+                            <button type="submit" class="btn btn-outline btn-xs" title="Toggle Active Status">
+                                <i class="fa-solid fa-power-off"></i> {{ 'Deactivate' if p.is_active_user else 'Activate' }}
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ url_for('admin.delete_patient', user_id=p.id) }}" style="display:inline; margin-left: 4px;" onsubmit="return confirm('Delete patient {{ p.name }}?');">
+                            <button type="submit" class="btn btn-outline btn-xs" style="color: var(--danger); border-color: rgba(239,68,68,0.3);" title="Delete Patient">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" style="text-align: center; color: #94a3b8; padding: 40px;">No patient records found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- View Patient Modal -->
+<div id="viewPatientModal" class="modal" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.6); z-index: 9999; align-items: center; justify-content: center;">
+    <div style="background: white; border-radius: 16px; width: 100%; max-width: 500px; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px;">
+            <h3 style="margin: 0; font-size: 1.25rem; font-weight: 700; color: #0f172a;"><i class="fa-solid fa-user-circle" style="color: #3b82f6;"></i> Patient Details</h3>
+            <button type="button" onclick="closePatientModal()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748b;">&times;</button>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; font-size: 0.9rem;">
+            <div>
+                <label style="color: #64748b; font-size: 0.8rem; font-weight: 600;">FULL NAME</label>
+                <div id="modalPatName" style="font-weight: 700; color: #0f172a;">—</div>
+            </div>
+            <div>
+                <label style="color: #64748b; font-size: 0.8rem; font-weight: 600;">USERNAME</label>
+                <div id="modalPatUsername" style="color: #3b82f6; font-weight: 600;">—</div>
+            </div>
+            <div>
+                <label style="color: #64748b; font-size: 0.8rem; font-weight: 600;">EMAIL</label>
+                <div id="modalPatEmail" style="color: #0f172a;">—</div>
+            </div>
+            <div>
+                <label style="color: #64748b; font-size: 0.8rem; font-weight: 600;">PHONE</label>
+                <div id="modalPatPhone" style="color: #0f172a;">—</div>
+            </div>
+            <div>
+                <label style="color: #64748b; font-size: 0.8rem; font-weight: 600;">REGISTERED DATE</label>
+                <div id="modalPatRegistered" style="color: #0f172a;">—</div>
+            </div>
+            <div>
+                <label style="color: #64748b; font-size: 0.8rem; font-weight: 600;">APPOINTMENTS</label>
+                <div id="modalPatAppointments" style="color: #0f172a; font-weight: 700;">—</div>
+            </div>
+            <div>
+                <label style="color: #64748b; font-size: 0.8rem; font-weight: 600;">STATUS</label>
+                <div id="modalPatStatus" style="font-weight: 700;">—</div>
+            </div>
+        </div>
+        <div style="margin-top: 24px; text-align: right;">
+            <button type="button" onclick="closePatientModal()" class="btn btn-primary btn-sm" style="border-radius: 8px;">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function viewPatient(name, email, phone, username, regDate, apptCount, status) {
+    document.getElementById('modalPatName').textContent = name;
+    document.getElementById('modalPatEmail').textContent = email;
+    document.getElementById('modalPatPhone').textContent = phone;
+    document.getElementById('modalPatUsername').textContent = '@' + username;
+    document.getElementById('modalPatRegistered').textContent = regDate;
+    document.getElementById('modalPatAppointments').textContent = apptCount + ' Bookings';
+    document.getElementById('modalPatStatus').textContent = status;
+    document.getElementById('viewPatientModal').style.display = 'flex';
+}
+function closePatientModal() {
+    document.getElementById('viewPatientModal').style.display = 'none';
+}
+</script>
+{% endblock %}

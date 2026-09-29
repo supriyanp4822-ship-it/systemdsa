@@ -1,0 +1,248 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Doctor Management — Hospital QueueMS Admin{% endblock %}
+
+{% block content %}
+<div class="admin-topbar">
+    <div>
+        <h2 style="margin: 0; color: #0d3b66; font-size: 1.6rem; font-weight: 800;">
+            <i class="fa-solid fa-user-doctor" style="color: #3b82f6;"></i> Doctor Management
+        </h2>
+        <p style="margin: 3px 0 0; color: #64748b; font-size: 0.9rem;">
+            Manage clinical practitioners, department assignments, consultation cabins, and duty hours.
+        </p>
+    </div>
+
+    <div>
+        <button type="button" class="btn btn-primary btn-sm" onclick="openModal('addDocModal')" style="border-radius: 8px; font-weight: 700;">
+            <i class="fa-solid fa-user-plus"></i> Add New Doctor
+        </button>
+    </div>
+</div>
+
+<div class="admin-card">
+    <div class="table-responsive">
+        <table class="table-admin">
+            <thead>
+                <tr>
+                    <th>Doctor Name</th>
+                    <th>Specialization</th>
+                    <th>Hospital</th>
+                    <th>Department</th>
+                    <th>Consultation Room</th>
+                    <th>Availability</th>
+                    <th>Today's Appointment Count</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in doctors %}
+                {% set d = item.user %}
+                {% set dp = item.profile %}
+                <tr>
+                    <td>
+                        <strong style="color: #0f172a;">{{ d.name }}</strong>
+                        <div style="font-size: 0.75rem; color: #64748b;">{{ d.email }}</div>
+                    </td>
+                    <td>
+                        <span class="badge badge-info">{{ dp.specialty if dp else 'General Physician' }}</span>
+                    </td>
+                    <td>
+                        <span style="font-size: 0.85rem; color: #334155;">{{ dp.hospital.name if dp and dp.hospital else 'Main Hospital' }}</span>
+                    </td>
+                    <td>
+                        <span style="font-size: 0.85rem; color: #475569;">{{ dp.specialty if dp else 'General' }}</span>
+                    </td>
+                    <td>
+                        <code>{{ dp.room_number if dp and dp.room_number else 'OPD-1' }}</code>
+                    </td>
+                    <td>
+                        <span style="font-size: 0.82rem; color: #059669; font-weight: 600;">
+                            {{ dp.available_from if dp else '09:00' }} - {{ dp.available_to if dp else '17:00' }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge badge-primary">{{ item.today_appts }} Appts</span>
+                        {% if item.waiting_count > 0 %}
+                            <span class="badge badge-warning" style="font-size: 0.7rem;">{{ item.waiting_count }} waiting</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge badge-{% if d.is_active_user %}success{% else %}danger{% endif %}">
+                            {{ 'Active' if d.is_active_user else 'Inactive' }}
+                        </span>
+                    </td>
+                    <td style="text-align: right; white-space: nowrap;">
+                        <button type="button" class="btn btn-outline btn-xs" onclick="openEditModal({{ d.id }}, '{{ d.name }}', '{{ d.email }}', '{{ dp.specialty if dp else '' }}', '{{ dp.hospital_id if dp else '' }}', '{{ dp.experience if dp else 5 }}', '{{ dp.consultation_fee if dp else 500 }}', '{{ dp.room_number if dp else 'OPD-1' }}', '{{ dp.available_from if dp else '09:00' }}', '{{ dp.available_to if dp else '17:00' }}')">
+                            <i class="fa-solid fa-pen-to-square"></i> Edit
+                        </button>
+                        <form method="POST" action="{{ url_for('admin.toggle_doctor', user_id=d.id) }}" style="display:inline; margin-left: 4px;">
+                            <button type="submit" class="btn btn-outline btn-xs" title="Toggle Status">
+                                <i class="fa-solid fa-power-off"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" style="text-align: center; color: #94a3b8; padding: 40px;">No doctors registered.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Doctor Modal -->
+<div class="modal" id="addDocModal">
+    <div class="modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="margin: 0; color: #0d3b66;"><i class="fa-solid fa-user-plus" style="color:#3b82f6;"></i> Add Doctor</h3>
+            <button type="button" class="btn btn-outline btn-xs" onclick="closeModal('addDocModal')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <form method="POST" action="{{ url_for('admin.add_doctor') }}">
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label style="font-weight: 600; font-size: 0.85rem;">Doctor Full Name</label>
+                <input type="text" name="name" class="form-control" placeholder="Dr. Firstname Lastname" required>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                <div>
+                    <label style="font-weight: 600; font-size: 0.85rem;">Username</label>
+                    <input type="text" name="username" class="form-control" placeholder="dr_name" required>
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 0.85rem;">Email</label>
+                    <input type="email" name="email" class="form-control" placeholder="doctor@hospital.com" required>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                <div>
+                    <label style="font-weight: 600; font-size: 0.85rem;">Department / Specialty</label>
+                    <select name="specialty" class="form-control" required>
+                        {% for dept in departments %}
+                            <option value="{{ dept.name }}">{{ dept.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 0.85rem;">Hospital</label>
+                    <select name="hospital_id" class="form-control" required>
+                        {% for h in hospitals %}
+                            <option value="{{ h.id }}">{{ h.name }} ({{ h.district.name if h.district else '' }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                <div>
+                    <label style="font-weight: 600; font-size: 0.85rem;">Cabin / Room</label>
+                    <input type="text" name="room_number" class="form-control" value="Room 101" required>
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 0.85rem;">Fee (₹)</label>
+                    <input type="number" step="50" name="consultation_fee" class="form-control" value="500" required>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px;">
+                <div>
+                    <label style="font-weight: 600; font-size: 0.85rem;">Available From</label>
+                    <input type="time" name="available_from" class="form-control" value="09:00" required>
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 0.85rem;">Available To</label>
+                    <input type="time" name="available_to" class="form-control" value="17:00" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" style="border-radius: 10px; font-weight: 700;">Save &amp; Register Doctor</button>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Doctor Modal -->
+<div class="modal" id="editDocModal">
+    <div class="modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="margin: 0; color: #0d3b66;"><i class="fa-solid fa-user-pen" style="color:#3b82f6;"></i> Edit Doctor Profile</h3>
+            <button type="button" class="btn btn-outline btn-xs" onclick="closeModal('editDocModal')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <form method="POST" id="editDocForm" action="">
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label style="font-weight: 600; font-size: 0.85rem;">Doctor Full Name</label>
+                <input type="text" name="name" id="editDocName" class="form-control" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label style="font-weight: 600; font-size: 0.85rem;">Email</label>
+                <input type="email" name="email" id="editDocEmail" class="form-control" required>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                <div>
+                    <label style="font-weight: 600; font-size: 0.85rem;">Department</label>
+                    <select name="specialty" id="editDocSpecialty" class="form-control" required>
+                        {% for dept in departments %}
+                            <option value="{{ dept.name }}">{{ dept.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 0.85rem;">Hospital</label>
+                    <select name="hospital_id" id="editDocHospital" class="form-control" required>
+                        {% for h in hospitals %}
+                            <option value="{{ h.id }}">{{ h.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                <div>
+                    <label style="font-weight: 600; font-size: 0.85rem;">Cabin / Room</label>
+                    <input type="text" name="room_number" id="editDocRoom" class="form-control" required>
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 0.85rem;">Fee (₹)</label>
+                    <input type="number" step="50" name="consultation_fee" id="editDocFee" class="form-control" required>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px;">
+                <div>
+                    <label style="font-weight: 600; font-size: 0.85rem;">Available From</label>
+                    <input type="time" name="available_from" id="editDocFrom" class="form-control" required>
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 0.85rem;">Available To</label>
+                    <input type="time" name="available_to" id="editDocTo" class="form-control" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" style="border-radius: 10px; font-weight: 700;">Update Doctor Profile</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openEditModal(id, name, email, specialty, hospitalId, exp, fee, room, fromTime, toTime) {
+    document.getElementById('editDocForm').action = `/admin/doctors/edit/${id}`;
+    document.getElementById('editDocName').value = name;
+    document.getElementById('editDocEmail').value = email;
+    document.getElementById('editDocSpecialty').value = specialty;
+    if (hospitalId) document.getElementById('editDocHospital').value = hospitalId;
+    document.getElementById('editDocFee').value = fee;
+    document.getElementById('editDocRoom').value = room;
+    document.getElementById('editDocFrom').value = fromTime;
+    document.getElementById('editDocTo').value = toTime;
+    openModal('editDocModal');
+}
+</script>
+{% endblock %}

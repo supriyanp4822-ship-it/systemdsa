@@ -1,0 +1,104 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Queue Management — Hospital QueueMS Admin{% endblock %}
+
+{% block content %}
+<div class="admin-topbar">
+    <div>
+        <h2 style="margin: 0; color: #0d3b66; font-size: 1.6rem; font-weight: 800;">
+            <i class="fa-solid fa-hourglass-half" style="color: #3b82f6;"></i> Live Queue Management
+        </h2>
+        <p style="margin: 3px 0 0; color: #64748b; font-size: 0.9rem;">
+            Monitor active outpatient queues across doctor consultation rooms, active tokens, and waiting times.
+        </p>
+    </div>
+
+    <div>
+        <a href="/queue" class="btn btn-outline btn-sm" style="border-radius: 8px;">
+            <i class="fa-solid fa-tv"></i> Public Live Board
+        </a>
+    </div>
+</div>
+
+<div class="admin-card">
+    <div class="table-responsive">
+        <table class="table-admin">
+            <thead>
+                <tr>
+                    <th>Hospital</th>
+                    <th>Department</th>
+                    <th>Doctor</th>
+                    <th>Current Token</th>
+                    <th>Waiting Patients</th>
+                    <th>Consulting Patient</th>
+                    <th>Completed Patients</th>
+                    <th>Estimated Waiting Time</th>
+                    <th style="text-align: right;">Queue Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for q in queue_data %}
+                <tr>
+                    <td>
+                        <div style="font-weight: 600; color: #0d3b66;">{{ q.hospital_name }}</div>
+                    </td>
+                    <td>
+                        <span style="font-size: 0.8rem; color: #6366f1; font-weight: 600;">{{ q.specialty }}</span>
+                    </td>
+                    <td>
+                        <strong style="color: #0f172a; font-size: 0.95rem;">{{ q.doctor.name }}</strong>
+                        <div style="font-size: 0.75rem; color: #64748b;">Cabin: {{ q.doctor.doctor_profile.room_number if q.doctor.doctor_profile else 'OPD-1' }}</div>
+                    </td>
+                    <td>
+                        {% if q.current_token != 'None' %}
+                            <span style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; padding: 4px 10px; border-radius: 6px; font-weight: 800; font-family: monospace; font-size: 0.85rem;">
+                                {{ q.current_token }}
+                            </span>
+                        {% else %}
+                            <span style="color: #94a3b8; font-size: 0.82rem;">No Active Token</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge badge-{% if q.waiting_count > 0 %}warning{% else %}secondary{% endif %}">
+                            {{ q.waiting_count }} Waiting
+                        </span>
+                    </td>
+                    <td>
+                        {% if q.current_patient %}
+                            <strong style="color: #059669;">{{ q.current_patient }}</strong>
+                        {% else %}
+                            <span style="color: #94a3b8;">None</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge badge-info">{{ q.completed_count }} Done</span>
+                    </td>
+                    <td>
+                        {% if q.waiting_count > 0 %}
+                            <span style="color: #6366f1; font-weight: 700;">~{{ q.est_wait }} mins</span>
+                        {% else %}
+                            <span style="color: #059669; font-weight: 600;">Clear</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right; white-space: nowrap;">
+                        {% if q.waiting_count > 0 or q.current_token != 'None' %}
+                            <form method="POST" action="{{ url_for('admin.reset_doctor_queue', doctor_id=q.doctor.id) }}" style="display:inline;" onsubmit="return confirm('Safely close the active queue for Dr. {{ q.doctor.name }}?');">
+                                <button type="submit" class="btn btn-outline btn-xs" style="color: #d97706; border-color: rgba(217, 119, 6, 0.4);" title="Safely close active queue without deleting historical records">
+                                    <i class="fa-solid fa-power-off"></i> Close Active Queue
+                                </button>
+                            </form>
+                        {% else %}
+                            <span style="font-size: 0.75rem; color: #94a3b8;">Queue Idle</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" style="text-align: center; color: #94a3b8; padding: 40px;">No active doctor queues.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

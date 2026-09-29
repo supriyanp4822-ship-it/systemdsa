@@ -1,0 +1,697 @@
+{% extends 'base.html' %}
+
+{% block title %}Book Appointment - Hospital Queue Management System{% endblock %}
+
+{% block head %}
+<style>
+/* ══════════════════════════════════════════════
+   APPOINTMENT PAGE — Full Hospital→Dept→Doctor Flow
+   ══════════════════════════════════════════════ */
+.appt-page { padding: 100px 20px 60px; min-height: 100vh; background: linear-gradient(135deg,#f0f4ff 0%,#e8f5e9 100%); }
+
+.appt-wrapper { max-width: 1280px; margin: 0 auto; }
+
+/* ── Step Progress Bar ── */
+.step-progress {
+  display: flex; align-items: center; justify-content: center; gap: 0;
+  margin: 0 auto 40px; max-width: 700px;
+}
+.step-node {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  position: relative; flex: 1;
+}
+.step-circle {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: #e2e8f0; color: #94a3b8;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; font-weight: 700;
+  border: 2px solid #e2e8f0;
+  transition: all .3s;
+  position: relative; z-index: 1;
+}
+.step-node.active .step-circle { background: #0d3b66; color: #fff; border-color: #0d3b66; box-shadow: 0 0 0 4px rgba(13,59,102,.15); }
+.step-node.done .step-circle   { background: #10b981; color: #fff; border-color: #10b981; }
+.step-label { font-size: .72rem; font-weight: 600; color: #94a3b8; text-align: center; }
+.step-node.active .step-label { color: #0d3b66; }
+.step-node.done .step-label   { color: #10b981; }
+.step-line { flex: 1; height: 2px; background: #e2e8f0; margin-top: -22px; z-index: 0; }
+.step-line.done { background: #10b981; }
+
+/* ── Two-column layout ── */
+.appt-layout {
+  display: grid; grid-template-columns: 380px 1fr; gap: 28px; align-items: start;
+}
+
+/* ── LEFT: Form wizard card ── */
+.wizard-card {
+  background: #fff; border-radius: 20px; padding: 32px;
+  box-shadow: 0 4px 24px rgba(13,59,102,.10);
+  position: sticky; top: 100px;
+}
+.wizard-card h2 { color: #0d3b66; font-size: 1.3rem; font-weight: 800; margin: 0 0 4px; }
+.wizard-card .subtitle { color: #64748b; font-size: .85rem; margin: 0 0 24px; }
+
+.form-group { margin-bottom: 18px; }
+.form-group label {
+  display: block; font-weight: 600; margin-bottom: 6px;
+  color: #334155; font-size: .88rem;
+}
+.form-group label i { margin-right: 6px; color: #1a5276; }
+.form-control {
+  width: 100%; padding: 11px 14px; border-radius: 10px;
+  border: 1.5px solid #cbd5e1; font-size: .9rem;
+  transition: border-color .2s, box-shadow .2s;
+  background: #f8fafc; font-family: inherit; color: #1e293b;
+}
+.form-control:focus { outline: none; border-color: #1a5276; box-shadow: 0 0 0 3px rgba(26,82,118,.1); background: #fff; }
+.form-control:disabled { opacity: .6; cursor: not-allowed; }
+
+/* ── Slots ── */
+.slots-section { display: none; margin-bottom: 18px; }
+.slots-section.show { display: block; animation: fadeUp .35s ease; }
+.slots-section h4 { font-size: .88rem; font-weight: 700; color: #0c4a6e; margin: 0 0 10px; }
+.slots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
+.slot-btn {
+  padding: 9px 4px; border-radius: 9px;
+  border: 1.5px solid #cbd5e1; background: #f8fafc;
+  font-size: .82rem; font-weight: 600; cursor: pointer;
+  text-align: center; transition: all .2s; color: #334155;
+}
+.slot-btn:hover { border-color: #1a5276; background: #e0f2fe; }
+.slot-btn.selected { background: #0d3b66; color: #fff; border-color: #0d3b66; box-shadow: 0 3px 10px rgba(13,59,102,.25); }
+.slots-empty { text-align: center; color: #94a3b8; padding: 20px 0; font-size: .88rem; }
+.slot-spinner { text-align: center; padding: 20px; color: #64748b; }
+.slot-spinner i { animation: spin .8s linear infinite; }
+
+/* ── Submit button ── */
+.btn-submit {
+  width: 100%; padding: 13px; border: none; border-radius: 12px;
+  background: linear-gradient(135deg,#0d3b66,#1a5276); color: #fff;
+  font-size: 1rem; font-weight: 700; cursor: pointer;
+  transition: transform .15s, box-shadow .2s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(13,59,102,.3); }
+.btn-submit:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+/* ── RIGHT: Hospital info + doctor cards ── */
+.info-panel { display: flex; flex-direction: column; gap: 20px; }
+
+.hospital-banner {
+  background: linear-gradient(135deg,#0d3b66,#1a5276);
+  border-radius: 18px; padding: 24px 28px; color: #fff;
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;
+  box-shadow: 0 4px 20px rgba(13,59,102,.2);
+}
+.hospital-banner h3 { margin: 0 0 6px; font-size: 1.2rem; }
+.hospital-banner p  { margin: 0; opacity: .85; font-size: .85rem; }
+.hb-stats { display: flex; gap: 20px; }
+.hb-stat { text-align: center; }
+.hb-stat span { display: block; font-size: 1.4rem; font-weight: 800; }
+.hb-stat label { font-size: .72rem; opacity: .8; }
+
+/* ── Doctor Cards Grid ── */
+.doctors-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+
+.doctor-card {
+  background: #fff; border-radius: 16px; padding: 20px;
+  box-shadow: 0 2px 12px rgba(13,59,102,.08);
+  border: 1.5px solid #e2e8f0;
+  cursor: pointer; transition: all .25s;
+}
+.doctor-card:hover { border-color: #3b82f6; transform: translateY(-2px); box-shadow: 0 6px 24px rgba(59,130,246,.15); }
+.doctor-card.selected-card { border-color: #0d3b66; box-shadow: 0 0 0 3px rgba(13,59,102,.12); }
+
+.dc-header { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.dc-avatar {
+  width: 52px; height: 52px; border-radius: 14px; flex-shrink: 0;
+  background: linear-gradient(135deg,#3b82f6,#6366f1);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; color: #fff;
+}
+.dc-name { font-size: 1rem; font-weight: 700; color: #0d3b66; margin: 0 0 2px; }
+.dc-spec { font-size: .8rem; color: #64748b; }
+
+.dc-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.dc-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 20px;
+  font-size: .74rem; font-weight: 600;
+  background: #f1f5f9; color: #475569;
+  border: 1px solid #e2e8f0;
+}
+.dc-badge.avail   { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
+.dc-badge.unavail { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+.dc-badge.queue   { background: #fefce8; color: #92400e; border-color: #fde68a; }
+.dc-badge.ai-wait { background: #f0f4ff; color: #4338ca; border-color: #c7d2fe; }
+
+.dc-queue-bar { margin-bottom: 14px; }
+.dc-queue-label { font-size: .75rem; color: #64748b; margin-bottom: 4px; display: flex; justify-content: space-between; }
+.dc-queue-track { height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; }
+.dc-queue-fill  { height: 100%; border-radius: 3px; background: linear-gradient(90deg,#10b981,#3b82f6); transition: width .5s ease; }
+
+.dc-footer { display: flex; gap: 8px; }
+.btn-view-slots {
+  flex: 1; padding: 9px; border-radius: 10px; border: none;
+  background: linear-gradient(135deg,#0d3b66,#1a5276); color: #fff;
+  font-size: .84rem; font-weight: 700; cursor: pointer;
+  transition: transform .15s, box-shadow .2s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.btn-view-slots:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(13,59,102,.3); }
+.btn-select-doctor {
+  padding: 9px 14px; border-radius: 10px;
+  border: 1.5px solid #e2e8f0; background: #f8fafc;
+  color: #334155; font-size: .84rem; cursor: pointer; transition: all .2s;
+}
+.btn-select-doctor:hover { border-color: #3b82f6; background: #eff6ff; }
+
+/* ── Empty / Loading states ── */
+.panel-empty { text-align: center; padding: 60px 20px; color: #94a3b8; }
+.panel-empty i { font-size: 2.5rem; margin-bottom: 12px; display: block; }
+.panel-empty p { font-size: .95rem; margin: 0; }
+
+.panel-loading { text-align: center; padding: 40px; color: #64748b; }
+.panel-loading i { font-size: 1.5rem; animation: spin .8s linear infinite; }
+
+/* ── Fee badge ── */
+.fee-strip {
+  display: none; background: linear-gradient(135deg,#f0f9ff,#e0f2fe);
+  border-radius: 12px; padding: 14px 18px; margin-bottom: 16px;
+  border: 1px solid #bae6fd;
+}
+.fee-strip.show { display: block; }
+.fee-strip p { margin: 0 0 2px; font-size: .8rem; color: #64748b; }
+.fee-strip h3 { margin: 0; font-size: 1.4rem; color: #0c4a6e; font-weight: 800; }
+
+/* ── Section header inside right panel ── */
+.section-heading {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+}
+.section-heading h3 { margin: 0; font-size: 1rem; font-weight: 700; color: #0d3b66; }
+.section-heading .count-pill {
+  background: #0d3b66; color: #fff;
+  border-radius: 20px; padding: 2px 10px; font-size: .75rem; font-weight: 700;
+}
+
+/* ── Dept Filter Chips ── */
+.dept-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.dept-chip {
+  padding: 7px 16px; border-radius: 20px; font-size: .82rem; font-weight: 600;
+  border: 1.5px solid #e2e8f0; background: #f8fafc; color: #475569;
+  cursor: pointer; transition: all .2s;
+}
+.dept-chip:hover   { border-color: #3b82f6; background: #eff6ff; color: #1d4ed8; }
+.dept-chip.active  { background: #0d3b66; color: #fff; border-color: #0d3b66; }
+.dept-chip.all     { background: #f1f5f9; }
+
+@keyframes fadeUp   { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+@keyframes spin     { to { transform:rotate(360deg); } }
+
+@media (max-width: 900px) {
+  .appt-layout { grid-template-columns: 1fr; }
+  .wizard-card { position: static; }
+}
+@media (max-width: 560px) {
+  .step-label { display: none; }
+  .hb-stats { gap: 12px; }
+  .slots-grid { grid-template-columns: repeat(3, 1fr); }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="appt-page">
+  <div class="appt-wrapper">
+
+    <!-- ── Step Progress ── -->
+    <div class="step-progress reveal" id="stepProgress">
+      <div class="step-node active" id="step1">
+        <div class="step-circle"><i class="fa-solid fa-hospital"></i></div>
+        <div class="step-label">Hospital</div>
+      </div>
+      <div class="step-line" id="line1"></div>
+      <div class="step-node" id="step2">
+        <div class="step-circle"><i class="fa-solid fa-building"></i></div>
+        <div class="step-label">Department</div>
+      </div>
+      <div class="step-line" id="line2"></div>
+      <div class="step-node" id="step3">
+        <div class="step-circle"><i class="fa-solid fa-user-doctor"></i></div>
+        <div class="step-label">Doctor</div>
+      </div>
+      <div class="step-line" id="line3"></div>
+      <div class="step-node" id="step4">
+        <div class="step-circle"><i class="fa-regular fa-clock"></i></div>
+        <div class="step-label">Time Slot</div>
+      </div>
+      <div class="step-line" id="line4"></div>
+      <div class="step-node" id="step5">
+        <div class="step-circle"><i class="fa-solid fa-check"></i></div>
+        <div class="step-label">Confirm</div>
+      </div>
+    </div>
+
+    <div class="appt-layout">
+      <!-- ── LEFT: Wizard Form ── -->
+      <div class="wizard-card reveal">
+        <h2>Book Appointment</h2>
+        <p class="subtitle">Follow the steps to schedule your visit.</p>
+
+        <form id="bookForm" method="POST" action="/appointments/preview">
+
+          <!-- Hospital -->
+          <div class="form-group">
+            <label for="hospital_id"><i class="fa-solid fa-hospital"></i> Select Hospital</label>
+            <select id="hospital_id" class="form-control" required>
+              <option value="" disabled selected>Choose a hospital…</option>
+              {% for h in hospitals %}
+              <option value="{{ h.id }}" {% if request.args.get('hospital_id')|string == h.id|string %}selected{% endif %}>{{ h.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Department -->
+          <div class="form-group">
+            <label for="dept_select"><i class="fa-solid fa-building"></i> Select Department</label>
+            <select id="dept_select" class="form-control" disabled required name="department">
+              <option value="" disabled selected>Select hospital first…</option>
+            </select>
+          </div>
+
+          <!-- Doctor -->
+          <div class="form-group">
+            <label for="doctor_id"><i class="fa-solid fa-user-doctor"></i> Select Doctor</label>
+            <select id="doctor_id" name="doctor_id" class="form-control" disabled required>
+              <option value="" disabled selected>Select department first…</option>
+            </select>
+          </div>
+
+          <!-- Date -->
+          <div class="form-group">
+            <label for="date"><i class="fa-regular fa-calendar"></i> Appointment Date</label>
+            <input type="date" id="date" name="date" class="form-control" required disabled>
+          </div>
+
+          <!-- Slots -->
+          <div class="slots-section" id="slotsSection">
+            <h4><i class="fa-regular fa-clock"></i> Available Time Slots</h4>
+            <div id="slotsContainer"></div>
+          </div>
+          <input type="hidden" id="time_slot" name="time_slot" value="">
+
+          <!-- Fee -->
+          <div class="fee-strip" id="feeStrip">
+            <p>Consultation Fee</p>
+            <h3>₹<span id="feeAmount">0.00</span></h3>
+          </div>
+
+          <button type="submit" class="btn-submit" id="submitBtn" disabled>
+            <i class="fa-solid fa-eye"></i> Preview Appointment
+          </button>
+        </form>
+      </div>
+
+      <!-- ── RIGHT: Hospital Info + Doctor Cards ── -->
+      <div class="info-panel reveal" id="infoPanel">
+        <div class="panel-empty" id="emptyState">
+          <i class="fa-solid fa-hospital"></i>
+          <p>Select a hospital on the left to see available departments and doctors.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+  /* ── Embed doctors from server ── */
+  const allDoctors = [
+    {% for doc in doctors %}
+    {
+      id: {{ doc.id }},
+      name: {{ doc.name | tojson }},
+      specialty: {{ (doc.doctor_profile.specialty if doc.doctor_profile else 'General') | tojson }},
+      hospital_id: {{ doc.doctor_profile.hospital_id if doc.doctor_profile and doc.doctor_profile.hospital_id else 'null' }},
+      fee: {{ doc.doctor_profile.consultation_fee if doc.doctor_profile else 300 }},
+      room: {{ (doc.doctor_profile.room_number if doc.doctor_profile and doc.doctor_profile.room_number else 'N/A') | tojson }},
+      experience: {{ doc.doctor_profile.experience if doc.doctor_profile else 0 }},
+      rating: {{ doc.doctor_profile.rating if doc.doctor_profile else 0 }},
+      available_from: {{ (doc.doctor_profile.available_from if doc.doctor_profile else '09:00') | tojson }},
+      available_to: {{ (doc.doctor_profile.available_to if doc.doctor_profile else '17:00') | tojson }},
+      schedule_days: [{% if doc.doctor_profile %}{% for s in doc.doctor_profile.schedules %}{{ s.day_of_week | tojson }}{% if not loop.last %},{% endif %}{% endfor %}{% endif %}]
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ];
+
+  /* ── DOM ── */
+  const hospitalSel  = document.getElementById('hospital_id');
+  const deptSel      = document.getElementById('dept_select');
+  const doctorSel    = document.getElementById('doctor_id');
+  const dateInput    = document.getElementById('date');
+  const slotsSection = document.getElementById('slotsSection');
+  const slotsCont    = document.getElementById('slotsContainer');
+  const timeSlotInput= document.getElementById('time_slot');
+  const submitBtn    = document.getElementById('submitBtn');
+  const feeStrip     = document.getElementById('feeStrip');
+  const feeAmount    = document.getElementById('feeAmount');
+  const infoPanel    = document.getElementById('infoPanel');
+  const emptyState   = document.getElementById('emptyState');
+  const bookForm     = document.getElementById('bookForm');
+
+  const today = new Date().toISOString().split('T')[0];
+  dateInput.setAttribute('min', today);
+
+  let hospitalData = null; // data from API
+  let selectedDept = 'all';
+  let selectedDoctorId = null;
+
+  /* ── Steps helper ── */
+  function setStep(n) {
+    for (let i = 1; i <= 5; i++) {
+      const node = document.getElementById('step' + i);
+      const line = document.getElementById('line' + (i - 1));
+      if (!node) continue;
+      node.classList.remove('active', 'done');
+      if (i < n)  { node.classList.add('done'); }
+      if (i === n){ node.classList.add('active'); }
+      if (line) line.classList.toggle('done', i <= n);
+    }
+  }
+
+  /* ═════════════════════════════
+     HOSPITAL CHANGE
+  ═════════════════════════════ */
+  hospitalSel.addEventListener('change', function() {
+    const hId = parseInt(this.value);
+    deptSel.innerHTML = '<option value="" disabled selected>Loading…</option>';
+    deptSel.disabled = true;
+    doctorSel.innerHTML = '<option value="" disabled selected>Select department first…</option>';
+    doctorSel.disabled = true;
+    resetDate();
+    selectedDept = 'all';
+    selectedDoctorId = null;
+    setStep(2);
+    infoPanel.innerHTML = '<div class="panel-loading"><i class="fa-solid fa-spinner"></i></div>';
+
+    fetch(`/appointments/api/hospital/${hId}`)
+      .then(r => r.json())
+      .then(data => {
+        hospitalData = data;
+        renderHospitalBanner(data);
+        renderDeptChips(data.departments);
+        renderDoctorCards(data.doctors);
+        // Fill dept select
+        deptSel.innerHTML = '<option value="all">All Departments</option>' +
+          data.departments.map(d => `<option value="${d}">${d}</option>`).join('');
+        deptSel.disabled = false;
+      })
+      .catch(() => {
+        infoPanel.innerHTML = '<div class="panel-empty"><i class="fa-solid fa-triangle-exclamation"></i><p>Failed to load hospital data.</p></div>';
+      });
+  });
+
+  /* ═════════════════════════════
+     DEPARTMENT CHANGE
+  ═════════════════════════════ */
+  deptSel.addEventListener('change', function() {
+    selectedDept = this.value;
+    selectedDoctorId = null;
+    doctorSel.innerHTML = '<option value="" disabled selected>Select a doctor from the cards…</option>';
+    doctorSel.disabled = true;
+    resetDate();
+    setStep(3);
+    if (hospitalData) {
+      const filtered = selectedDept === 'all'
+        ? hospitalData.doctors
+        : hospitalData.doctors.filter(d => d.specialty === selectedDept);
+      highlightDeptChip(selectedDept);
+      renderDoctorCards(filtered);
+    }
+  });
+
+  /* ═════════════════════════════
+     RENDER HOSPITAL BANNER
+  ═════════════════════════════ */
+  function renderHospitalBanner(data) {
+    const h = data.hospital;
+    const now = new Date();
+    const hhmm = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+    const isOpen = h.opening_time <= hhmm && hhmm <= h.closing_time;
+    const banner = `
+      <div class="hospital-banner">
+        <div>
+          <h3><i class="fa-solid fa-hospital"></i> ${h.name}</h3>
+          <p><i class="fa-solid fa-location-dot"></i> ${h.address || '—'}
+            ${h.phone ? ` &nbsp;|&nbsp; <i class="fa-solid fa-phone"></i> ${h.phone}` : ''}
+          </p>
+          <p style="margin-top:6px;">
+            <span style="background:${isOpen ? '#22c55e' : '#ef4444'};color:#fff;padding:3px 10px;border-radius:20px;font-size:.74rem;font-weight:700;">
+              ${isOpen ? '🟢 OPEN NOW' : '🔴 CLOSED'}
+            </span>
+            &nbsp; ${h.opening_time} – ${h.closing_time}
+          </p>
+        </div>
+        <div class="hb-stats">
+          <div class="hb-stat">
+            <span>${data.departments.length}</span>
+            <label>Depts</label>
+          </div>
+          <div class="hb-stat">
+            <span>${data.doctors.length}</span>
+            <label>Doctors</label>
+          </div>
+          <div class="hb-stat">
+            <span>${data.hospital_queue_total}</span>
+            <label>In Queue</label>
+          </div>
+        </div>
+      </div>`;
+    infoPanel.innerHTML = banner + `
+      <div>
+        <div class="section-heading">
+          <h3><i class="fa-solid fa-building"></i> Departments</h3>
+        </div>
+        <div class="dept-chips" id="deptChips"></div>
+      </div>
+      <div id="doctorCardsWrap">
+        <div class="section-heading">
+          <h3><i class="fa-solid fa-user-doctor"></i> Doctors</h3>
+          <span class="count-pill" id="docCount">${data.doctors.length}</span>
+        </div>
+        <div class="doctors-grid" id="doctorsGrid"></div>
+      </div>`;
+    renderDeptChips(data.departments);
+    renderDoctorCards(data.doctors);
+  }
+
+  /* ── Dept Chips ── */
+  function renderDeptChips(depts) {
+    const container = document.getElementById('deptChips');
+    if (!container) return;
+    container.innerHTML = `<span class="dept-chip all ${selectedDept==='all'?'active':''}" data-dept="all">All</span>` +
+      depts.map(d => `<span class="dept-chip ${selectedDept===d?'active':''}" data-dept="${d}">${d}</span>`).join('');
+    container.querySelectorAll('.dept-chip').forEach(chip => {
+      chip.addEventListener('click', function() {
+        selectedDept = this.dataset.dept;
+        deptSel.value = selectedDept === 'all' ? 'all' : selectedDept;
+        highlightDeptChip(selectedDept);
+        const filtered = selectedDept === 'all'
+          ? hospitalData.doctors
+          : hospitalData.doctors.filter(d => d.specialty === selectedDept);
+        renderDoctorCards(filtered);
+        doctorSel.innerHTML = '<option value="" disabled selected>Select a doctor from the cards…</option>';
+        doctorSel.disabled = true;
+        resetDate();
+        setStep(3);
+      });
+    });
+  }
+
+  function highlightDeptChip(dept) {
+    document.querySelectorAll('.dept-chip').forEach(c => {
+      c.classList.toggle('active', c.dataset.dept === dept);
+    });
+  }
+
+  /* ── Doctor Cards ── */
+  function renderDoctorCards(doctors) {
+    const grid = document.getElementById('doctorsGrid');
+    const countEl = document.getElementById('docCount');
+    if (!grid) return;
+    if (countEl) countEl.textContent = doctors.length;
+    if (doctors.length === 0) {
+      grid.innerHTML = '<div class="panel-empty" style="padding:30px 0;"><i class="fa-solid fa-user-doctor"></i><p>No doctors available for this selection.</p></div>';
+      return;
+    }
+    const today = new Date().toLocaleDateString('en-US', {weekday: 'long'});
+    grid.innerHTML = doctors.map(d => {
+      const isToday = d.schedule_days.includes(today);
+      const qPct = Math.min(100, d.total_queue * 15);
+      return `
+        <div class="doctor-card ${selectedDoctorId===d.id?'selected-card':''}" data-id="${d.id}" id="dc-${d.id}">
+          <div class="dc-header">
+            <div class="dc-avatar"><i class="fa-solid fa-user-doctor"></i></div>
+            <div>
+              <div class="dc-name">${d.name}</div>
+              <div class="dc-spec">${d.specialty}</div>
+            </div>
+          </div>
+          <div class="dc-badges">
+            <span class="dc-badge ${isToday?'avail':'unavail'}">
+              <i class="fa-solid fa-circle" style="font-size:.5rem;"></i>
+              ${isToday ? 'Available Today' : 'Not Available Today'}
+            </span>
+            <span class="dc-badge"><i class="fa-solid fa-door-open"></i> Room ${d.room}</span>
+            <span class="dc-badge"><i class="fa-solid fa-briefcase-medical"></i> ${d.experience} yrs</span>
+            <span class="dc-badge"><i class="fa-solid fa-star" style="color:#f59e0b;"></i> ${d.rating.toFixed(1)}</span>
+            <span class="dc-badge queue"><i class="fa-solid fa-users"></i> ${d.total_queue} in queue</span>
+            <span class="dc-badge ai-wait"><i class="fa-solid fa-brain"></i> ~${d.ai_wait_time} min wait</span>
+          </div>
+          <div class="dc-queue-bar">
+            <div class="dc-queue-label">
+              <span>Today's Queue</span>
+              <span>${d.waiting_count} waiting${d.in_consult ? `, 1 consulting` : ''}</span>
+            </div>
+            <div class="dc-queue-track">
+              <div class="dc-queue-fill" style="width:${qPct}%"></div>
+            </div>
+          </div>
+          <div class="dc-footer">
+            <button class="btn-view-slots" data-id="${d.id}" data-fee="${d.fee}" data-name="${d.name}">
+              <i class="fa-regular fa-clock"></i> View Slots
+            </button>
+            <button class="btn-select-doctor" data-id="${d.id}" title="Select this doctor">
+              <i class="fa-solid fa-check"></i>
+            </button>
+          </div>
+          <div style="margin-top:10px;font-size:.78rem;color:#64748b;">
+            <i class="fa-solid fa-clock"></i> ${d.available_from} – ${d.available_to}
+            &nbsp;|&nbsp;
+            <i class="fa-solid fa-calendar-days"></i> ${d.schedule_days.join(', ') || 'No schedule set'}
+          </div>
+        </div>`;
+    }).join('');
+
+    /* "View Slots" opens date picker and selects doctor */
+    grid.querySelectorAll('.btn-view-slots').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        selectDoctor(parseInt(this.dataset.id), parseFloat(this.dataset.fee), this.dataset.name);
+        dateInput.scrollIntoView({behavior: 'smooth', block: 'center'});
+        setTimeout(() => dateInput.focus(), 300);
+      });
+    });
+
+    /* "Select" icon on card selects doctor */
+    grid.querySelectorAll('.btn-select-doctor').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const d = doctors.find(x => x.id === parseInt(this.closest('.doctor-card').dataset.id));
+        if (d) selectDoctor(d.id, d.fee, d.name);
+      });
+    });
+
+    /* Card click also selects doctor */
+    grid.querySelectorAll('.doctor-card').forEach(card => {
+      card.addEventListener('click', function(e) {
+        if (e.target.closest('button')) return;
+        const d = doctors.find(x => x.id === parseInt(this.dataset.id));
+        if (d) selectDoctor(d.id, d.fee, d.name);
+      });
+    });
+  }
+
+  /* ── Select a doctor ── */
+  function selectDoctor(id, fee, name) {
+    selectedDoctorId = id;
+    // Highlight card
+    document.querySelectorAll('.doctor-card').forEach(c => {
+      c.classList.toggle('selected-card', parseInt(c.dataset.id) === id);
+    });
+    // Populate hidden doctor select
+    doctorSel.innerHTML = `<option value="${id}" selected>${name}</option>`;
+    doctorSel.disabled = false;
+    // Fee strip
+    feeAmount.textContent = fee.toFixed(2);
+    feeStrip.classList.add('show');
+    // Enable date
+    dateInput.disabled = false;
+    resetSlots();
+    setStep(4);
+  }
+
+  /* ── Date change → fetch slots ── */
+  dateInput.addEventListener('change', function() {
+    if (!selectedDoctorId || !this.value) return;
+    setStep(4);
+    fetchSlots(selectedDoctorId, this.value);
+  });
+
+  function fetchSlots(doctorId, dateVal) {
+    slotsSection.classList.add('show');
+    slotsCont.innerHTML = '<div class="slot-spinner"><i class="fa-solid fa-spinner"></i> Loading slots…</div>';
+    timeSlotInput.value = '';
+    submitBtn.disabled = true;
+
+    const fd = new FormData();
+    fd.append('doctor_id', doctorId);
+    fd.append('date', dateVal);
+
+    fetch('/appointments/slots', { method: 'POST', body: fd })
+      .then(r => r.json())
+      .then(data => {
+        if (!data.slots || data.slots.length === 0) {
+          slotsCont.innerHTML = '<div class="slots-empty"><i class="fa-regular fa-calendar-xmark"></i> No available slots for this date.</div>';
+          return;
+        }
+        slotsCont.innerHTML = '<div class="slots-grid">' +
+          data.slots.map(s => `<button type="button" class="slot-btn" data-slot="${s}">${s}</button>`).join('') +
+          '</div>';
+        slotsCont.querySelectorAll('.slot-btn').forEach(btn => {
+          btn.addEventListener('click', function() {
+            slotsCont.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
+            this.classList.add('selected');
+            timeSlotInput.value = this.dataset.slot;
+            submitBtn.disabled = false;
+            setStep(5);
+          });
+        });
+      })
+      .catch(() => {
+        slotsCont.innerHTML = '<div class="slots-empty"><i class="fa-solid fa-triangle-exclamation"></i> Failed to load slots.</div>';
+      });
+  }
+
+  /* ── Helpers ── */
+  function resetDate() {
+    dateInput.value = '';
+    dateInput.disabled = true;
+    resetSlots();
+    feeStrip.classList.remove('show');
+    submitBtn.disabled = true;
+  }
+
+  function resetSlots() {
+    slotsSection.classList.remove('show');
+    slotsCont.innerHTML = '';
+    timeSlotInput.value = '';
+    submitBtn.disabled = true;
+  }
+
+  /* ── Pre-select hospital if URL param given ── */
+  const urlParams = new URLSearchParams(window.location.search);
+  const preHospital = urlParams.get('hospital_id');
+  const preDoctor   = urlParams.get('doctor_id');
+  if (preHospital) {
+    hospitalSel.value = preHospital;
+    hospitalSel.dispatchEvent(new Event('change'));
+  }
+
+  setStep(1);
+})();
+</script>
+{% endblock %}

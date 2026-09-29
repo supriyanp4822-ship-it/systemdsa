@@ -1,0 +1,155 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Appointment Management — Hospital QueueMS Admin{% endblock %}
+
+{% block content %}
+<div class="admin-topbar">
+    <div>
+        <h2 style="margin: 0; color: #0d3b66; font-size: 1.6rem; font-weight: 800;">
+            <i class="fa-regular fa-calendar-check" style="color: #3b82f6;"></i> Appointment Management
+        </h2>
+        <p style="margin: 3px 0 0; color: #64748b; font-size: 0.9rem;">
+            Filter and oversee clinical bookings, tokens, consultation workflows, and status tracking.
+        </p>
+    </div>
+
+    <div>
+        <span class="badge badge-primary" style="padding: 8px 14px; font-size: 0.85rem;">
+            {{ appointments|length }} Appointments Found
+        </span>
+    </div>
+</div>
+
+<div class="admin-card">
+    <!-- Filter Toolbar -->
+    <form method="GET" action="{{ url_for('admin.appointments') }}" style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; background: #f8fafc; padding: 16px; border-radius: 12px; border: 1px solid #edf2f7;">
+        <div>
+            <label style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 4px;">Status</label>
+            <select name="status" class="form-control" style="font-size: 0.85rem; padding: 6px 10px;">
+                <option value="all" {% if current_status == 'all' %}selected{% endif %}>All Statuses</option>
+                <option value="scheduled" {% if current_status == 'scheduled' %}selected{% endif %}>Scheduled / Booked</option>
+                <option value="paid" {% if current_status == 'paid' %}selected{% endif %}>Paid / Confirmed</option>
+                <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>Completed</option>
+                <option value="cancelled" {% if current_status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+            </select>
+        </div>
+
+        <div>
+            <label style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 4px;">Date</label>
+            <input type="date" name="date" class="form-control" value="{{ current_date }}" style="font-size: 0.85rem; padding: 6px 10px;">
+        </div>
+
+        <div>
+            <label style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 4px;">Doctor</label>
+            <select name="doctor_id" class="form-control" style="font-size: 0.85rem; padding: 6px 10px;">
+                <option value="">All Doctors</option>
+                {% for doc in doctors %}
+                    <option value="{{ doc.id }}" {% if current_doc == doc.id|string %}selected{% endif %}>{{ doc.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 4px;">Hospital</label>
+            <select name="hospital_id" class="form-control" style="font-size: 0.85rem; padding: 6px 10px;">
+                <option value="">All Hospitals</option>
+                {% for h in hospitals %}
+                    <option value="{{ h.id }}" {% if current_hosp == h.id|string %}selected{% endif %}>{{ h.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div style="display: flex; align-items: flex-end; gap: 8px;">
+            <button type="submit" class="btn btn-primary btn-sm" style="border-radius: 8px; padding: 7px 16px;">
+                <i class="fa-solid fa-filter"></i> Apply Filters
+            </button>
+            <a href="{{ url_for('admin.appointments') }}" class="btn btn-outline btn-sm" style="border-radius: 8px; padding: 7px 12px;">Reset</a>
+        </div>
+    </form>
+
+    <div class="table-responsive">
+        <table class="table-admin">
+            <thead>
+                <tr>
+                    <th>Appointment ID</th>
+                    <th>Patient</th>
+                    <th>Hospital</th>
+                    <th>Doctor</th>
+                    <th>Department</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Token</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for appt in appointments %}
+                {% set dp = appt.doctor.doctor_profile if appt.doctor else None %}
+                <tr>
+                    <td><strong>#APT-{{ appt.id }}</strong></td>
+                    <td>
+                        <strong style="color: #0f172a;">{{ appt.patient.name }}</strong>
+                        <div style="font-size: 0.75rem; color: #64748b;">ID: #PAT-{{ appt.patient_id }}</div>
+                    </td>
+                    <td>
+                        <span style="font-size: 0.85rem;">{{ dp.hospital.name if dp and dp.hospital else 'Main Hospital' }}</span>
+                    </td>
+                    <td>
+                        <div style="font-weight: 600; color: #0d3b66;">{{ appt.doctor.name }}</div>
+                    </td>
+                    <td>
+                        <span style="font-size: 0.8rem; color: #4338ca; font-weight: 600;">{{ dp.specialty if dp else 'General' }}</span>
+                    </td>
+                    <td>
+                        <div>{{ appt.date.strftime('%d %b %Y') }}</div>
+                    </td>
+                    <td>
+                        <strong style="font-size: 0.82rem; color: #059669;">{{ appt.time_slot }}</strong>
+                    </td>
+                    <td>
+                        {% if appt.queue_entry %}
+                            <span style="background: #0f172a; color: #fff; padding: 2px 8px; border-radius: 4px; font-weight: 800; font-size: 0.8rem; font-family: monospace;">
+                                T{{ '%03d' % appt.queue_entry.id }}
+                            </span>
+                        {% else %}
+                            <span style="color: #94a3b8; font-size: 0.8rem;">Not Checked In</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if appt.status == 'paid' %}
+                            <span class="badge badge-success" style="font-size: 0.72rem;">Booked</span>
+                        {% elif appt.queue_entry and appt.queue_entry.status == 'in_consultation' %}
+                            <span class="badge badge-warning" style="font-size: 0.72rem;">Consulting</span>
+                        {% elif appt.queue_entry and appt.queue_entry.status == 'waiting' %}
+                            <span class="badge badge-info" style="font-size: 0.72rem;">Waiting</span>
+                        {% elif appt.status == 'completed' %}
+                            <span class="badge badge-primary" style="font-size: 0.72rem;">Completed</span>
+                        {% elif appt.status == 'cancelled' %}
+                            <span class="badge badge-danger" style="font-size: 0.72rem;">Cancelled</span>
+                        {% else %}
+                            <span class="badge badge-secondary" style="font-size: 0.72rem;">{{ appt.status | title }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right; white-space: nowrap;">
+                        {% if appt.status != 'cancelled' and appt.status != 'completed' %}
+                            <form method="POST" action="{{ url_for('admin.update_appointment', appt_id=appt.id, status='cancelled') }}" style="display:inline;" onsubmit="return confirm('Cancel appointment #APT-{{ appt.id }}? Patient will be notified.');">
+                                <button type="submit" class="btn btn-outline btn-xs" style="color: var(--danger); border-color: rgba(239,68,68,0.4);" title="Cancel Appointment">
+                                    <i class="fa-solid fa-ban"></i> Cancel
+                                </button>
+                            </form>
+                        {% else %}
+                            <span style="font-size: 0.75rem; color: #94a3b8;">Locked</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" style="text-align: center; color: #94a3b8; padding: 40px;">No appointments matching filter criteria.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

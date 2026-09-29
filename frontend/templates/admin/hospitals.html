@@ -1,0 +1,226 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Hospital Management — Hospital QueueMS Admin{% endblock %}
+
+{% block content %}
+<div class="admin-topbar">
+    <div>
+        <h2 style="margin: 0; color: #0d3b66; font-size: 1.6rem; font-weight: 800;">
+            <i class="fa-solid fa-hospital" style="color: #3b82f6;"></i> Hospital Management
+        </h2>
+        <p style="margin: 3px 0 0; color: #64748b; font-size: 0.9rem;">
+            Manage hospitals across Tamil Nadu districts, geolocations, and affiliated doctor rosters.
+        </p>
+    </div>
+
+    <div>
+        <button type="button" class="btn btn-primary btn-sm" onclick="openModal('addHospModal')" style="border-radius: 8px; font-weight: 700;">
+            <i class="fa-solid fa-square-plus"></i> Add New Hospital
+        </button>
+    </div>
+</div>
+
+<div class="admin-card">
+    <div class="table-responsive">
+        <table class="table-admin">
+            <thead>
+                <tr>
+                    <th>Hospital Name</th>
+                    <th>District</th>
+                    <th>Address</th>
+                    <th>Phone</th>
+                    <th>Doctors</th>
+                    <th>Departments</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in hospitals %}
+                {% set h = item.hospital %}
+                <tr>
+                    <td>
+                        <strong style="color: #0f172a;">{{ h.name }}</strong>
+                        <div style="font-size: 0.75rem; color: #64748b;">Hours: {{ h.opening_time }} - {{ h.closing_time }}</div>
+                    </td>
+                    <td>
+                        <span class="badge badge-primary">{{ h.district.name if h.district else 'Tamil Nadu' }}</span>
+                    </td>
+                    <td>
+                        <span style="font-size: 0.85rem; color: #334155; max-width: 250px; display: inline-block;">{{ h.address }}</span>
+                    </td>
+                    <td>
+                        <span style="font-size: 0.85rem; font-family: monospace;">{{ h.phone or '—' }}</span>
+                    </td>
+                    <td>
+                        <span class="badge badge-info">{{ item.doc_count }} Doctors</span>
+                    </td>
+                    <td>
+                        <span style="font-size: 0.78rem; color: #475569;">{{ item.departments | join(', ') if item.departments else 'General' }}</span>
+                    </td>
+                    <td>
+                        <span class="badge badge-{% if h.is_active %}success{% else %}danger{% endif %}">
+                            {{ 'Active' if h.is_active else 'Inactive' }}
+                        </span>
+                    </td>
+                    <td style="text-align: right; white-space: nowrap;">
+                        <button type="button" class="btn btn-outline btn-xs" onclick="openEditHospModal({{ h.id }}, '{{ h.name }}', {{ h.district_id }}, '{{ h.address }}', '{{ h.phone or '' }}', {{ h.latitude }}, {{ h.longitude }}, '{{ h.opening_time }}', '{{ h.closing_time }}')">
+                            <i class="fa-solid fa-pen-to-square"></i> Edit
+                        </button>
+                        <form method="POST" action="{{ url_for('admin.toggle_hospital', h_id=h.id) }}" style="display:inline; margin-left: 4px;">
+                            <button type="submit" class="btn btn-outline btn-xs" title="Toggle Status">
+                                <i class="fa-solid fa-power-off"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" style="text-align: center; color: #94a3b8; padding: 40px;">No hospitals found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Hospital Modal -->
+<div class="modal" id="addHospModal">
+    <div class="modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="margin: 0; color: #0d3b66;"><i class="fa-solid fa-square-plus" style="color:#3b82f6;"></i> Add Hospital</h3>
+            <button type="button" class="btn btn-outline btn-xs" onclick="closeModal('addHospModal')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <form method="POST" action="{{ url_for('admin.add_hospital') }}">
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label style="font-weight: 600; font-size: 0.85rem;">Hospital Name</label>
+                <input type="text" name="name" class="form-control" placeholder="e.g. Coimbatore Medical College Hospital" required>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                <div>
+                    <label style="font-weight: 600; font-size: 0.85rem;">Tamil Nadu District</label>
+                    <select name="district_id" class="form-control" required>
+                        <option value="">Select District</option>
+                        {% for d in districts %}
+                            <option value="{{ d.id }}">{{ d.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 0.85rem;">Phone Number</label>
+                    <input type="text" name="phone" class="form-control" placeholder="0422-2301393">
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label style="font-weight: 600; font-size: 0.85rem;">Full Address</label>
+                <input type="text" name="address" class="form-control" placeholder="Street, Area, City, Pincode" required>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                <div>
+                    <label style="font-weight: 600; font-size: 0.85rem;">Latitude</label>
+                    <input type="number" step="0.0001" name="latitude" class="form-control" value="11.0168" required>
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 0.85rem;">Longitude</label>
+                    <input type="number" step="0.0001" name="longitude" class="form-control" value="76.9558" required>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px;">
+                <div>
+                    <label style="font-weight: 600; font-size: 0.85rem;">Opening Time</label>
+                    <input type="time" name="opening_time" class="form-control" value="09:00" required>
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 0.85rem;">Closing Time</label>
+                    <input type="time" name="closing_time" class="form-control" value="21:00" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" style="border-radius: 10px; font-weight: 700;">Save Hospital</button>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Hospital Modal -->
+<div class="modal" id="editHospModal">
+    <div class="modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="margin: 0; color: #0d3b66;"><i class="fa-solid fa-pen-to-square" style="color:#3b82f6;"></i> Edit Hospital</h3>
+            <button type="button" class="btn btn-outline btn-xs" onclick="closeModal('editHospModal')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <form method="POST" id="editHospForm" action="">
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label style="font-weight: 600; font-size: 0.85rem;">Hospital Name</label>
+                <input type="text" name="name" id="editHospName" class="form-control" required>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                <div>
+                    <label style="font-weight: 600; font-size: 0.85rem;">District</label>
+                    <select name="district_id" id="editHospDistrict" class="form-control" required>
+                        {% for d in districts %}
+                            <option value="{{ d.id }}">{{ d.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 0.85rem;">Phone Number</label>
+                    <input type="text" name="phone" id="editHospPhone" class="form-control">
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label style="font-weight: 600; font-size: 0.85rem;">Address</label>
+                <input type="text" name="address" id="editHospAddress" class="form-control" required>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                <div>
+                    <label style="font-weight: 600; font-size: 0.85rem;">Latitude</label>
+                    <input type="number" step="0.0001" name="latitude" id="editHospLat" class="form-control" required>
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 0.85rem;">Longitude</label>
+                    <input type="number" step="0.0001" name="longitude" id="editHospLng" class="form-control" required>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px;">
+                <div>
+                    <label style="font-weight: 600; font-size: 0.85rem;">Opening Time</label>
+                    <input type="time" name="opening_time" id="editHospOpen" class="form-control" required>
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 0.85rem;">Closing Time</label>
+                    <input type="time" name="closing_time" id="editHospClose" class="form-control" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" style="border-radius: 10px; font-weight: 700;">Update Hospital</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openEditHospModal(id, name, districtId, address, phone, lat, lng, openT, closeT) {
+    document.getElementById('editHospForm').action = `/admin/hospitals/edit/${id}`;
+    document.getElementById('editHospName').value = name;
+    document.getElementById('editHospDistrict').value = districtId;
+    document.getElementById('editHospAddress').value = address;
+    document.getElementById('editHospPhone').value = phone;
+    document.getElementById('editHospLat').value = lat;
+    document.getElementById('editHospLng').value = lng;
+    document.getElementById('editHospOpen').value = openT;
+    document.getElementById('editHospClose').value = closeT;
+    openModal('editHospModal');
+}
+</script>
+{% endblock %}

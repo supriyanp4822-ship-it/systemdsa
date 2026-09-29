@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+
+{% block title %}Notifications - Hospital QueueMS{% endblock %}
+
+{% block content %}
+<section class="dashboard-section">
+    <div class="dashboard-container" style="max-width: 900px;">
+        <!-- Page Header -->
+        <div class="db-welcome reveal" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 25px;">
+            <div>
+                <a href="{{ url_for('dash.index') }}" class="btn-back-link" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.88rem; color: var(--slate-500); margin-bottom: 8px;">
+                    <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+                </a>
+                <h2 style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fa-solid fa-bell" style="color: var(--primary);"></i> Notification Center
+                </h2>
+                <p>Stay updated on your appointments, queue tokens, doctor calls, and payment receipts.</p>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span class="badge badge-primary" id="allPageUnreadCount" style="padding: 8px 14px; font-size: 0.88rem;">
+                    {{ unread_count }} Unread
+                </span>
+                <button type="button" class="btn btn-outline btn-sm" id="allPageMarkAllRead" onclick="markAllNotificationsRead()" style="border-radius: 8px;">
+                    <i class="fa-solid fa-check-double"></i> Mark All as Read
+                </button>
+            </div>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="notif-filter-tabs reveal">
+            <button class="notif-tab active" onclick="filterNotifications('all', this)">All</button>
+            <button class="notif-tab" onclick="filterNotifications('unread', this)">Unread</button>
+            <button class="notif-tab" onclick="filterNotifications('appointments', this)">Appointments</button>
+            <button class="notif-tab" onclick="filterNotifications('queue', this)">Queue & Calls</button>
+            <button class="notif-tab" onclick="filterNotifications('payments', this)">Payments</button>
+        </div>
+
+        <!-- Notification List -->
+        <div class="notif-page-list reveal" id="notificationsFullList">
+            {% for n in notifications %}
+                <div class="notif-card {% if not n.is_read %}unread{% endif %}" 
+                     data-id="{{ n.id }}" 
+                     data-event="{{ n.event_type }}" 
+                     data-read="{{ 'true' if n.is_read else 'false' }}">
+                    <div class="notif-card-icon notif-type-{{ n.event_type }}">
+                        {% if n.event_type == 'appointment_booked' %}
+                            <i class="fa-regular fa-calendar-check"></i>
+                        {% elif n.event_type == 'queue_token_generated' %}
+                            <i class="fa-solid fa-ticket"></i>
+                        {% elif n.event_type == 'queue_position_changed' %}
+                            <i class="fa-solid fa-arrows-up-down"></i>
+                        {% elif n.event_type == 'waiting_time_updated' %}
+                            <i class="fa-regular fa-clock"></i>
+                        {% elif n.event_type == 'doctor_called' %}
+                            <i class="fa-solid fa-user-doctor fa-shake"></i>
+                        {% elif n.event_type == 'consultation_completed' %}
+                            <i class="fa-solid fa-circle-check"></i>
+                        {% elif n.event_type == 'payment_successful' %}
+                            <i class="fa-solid fa-receipt"></i>
+                        {% elif n.event_type == 'appointment_cancelled' %}
+                            <i class="fa-solid fa-calendar-xmark"></i>
+                        {% else %}
+                            <i class="fa-solid fa-bell"></i>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="notif-card-body">
+                        <div class="notif-card-header">
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                <h4 class="notif-card-title">{{ n.title }}</h4>
+                                <span class="notif-badge-pill notif-badge-{{ n.event_type }}">
+                                    {{ n.event_type | replace('_', ' ') | title }}
+                                </span>
+                            </div>
+                            <span class="notif-card-time" title="{{ n.created_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}">
+                                <i class="fa-regular fa-clock"></i> {{ n.created_at.strftime('%d %b %Y, %I:%M %p') }}
+                            </span>
+                        </div>
+                        
+                        <div class="notif-card-message">
+                            {{ n.message }}
+                        </div>
+                        
+                        <div class="notif-card-footer">
+                            {% if n.extra_info %}
+                                <span class="notif-card-extra">
+                                    <i class="fa-solid fa-info-circle"></i> {{ n.extra_info }}
+                                </span>
+                            {% else %}
+                                <span></span>
+                            {% endif %}
+
+                            {% if not n.is_read %}
+                                <button type="button" class="btn-mark-single-read" onclick="markCardNotificationRead({{ n.id }}, this)">
+                                    <i class="fa-solid fa-check"></i> Mark as read
+                                </button>
+                            {% else %}
+                                <span class="notif-read-status"><i class="fa-solid fa-check"></i> Read</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="empty-state notif-empty-card">
+                    <i class="fa-regular fa-bell-slash"></i>
+                    <h3>No notifications recorded yet</h3>
+                    <p>When you book appointments, receive queue tokens, or when your queue status changes, updates will appear here in real time.</p>
+                    <a href="/appointments" class="btn btn-primary btn-sm" style="margin-top: 15px;">Book an Appointment</a>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function filterNotifications(category, tabBtn) {
+        document.querySelectorAll('.notif-tab').forEach(btn => btn.classList.remove('active'));
+        tabBtn.classList.add('active');
+
+        const cards = document.querySelectorAll('.notif-card');
+        cards.forEach(card => {
+            const eventType = card.dataset.event;
+            const isRead = card.dataset.read === 'true';
+
+            if (category === 'all') {
+                card.style.display = 'flex';
+            } else if (category === 'unread') {
+                card.style.display = !isRead ? 'flex' : 'none';
+            } else if (category === 'appointments') {
+                const isAppt = eventType === 'appointment_booked' || eventType === 'appointment_cancelled';
+                card.style.display = isAppt ? 'flex' : 'none';
+            } else if (category === 'queue') {
+                const isQueue = eventType === 'queue_token_generated' || eventType === 'queue_position_changed' || eventType === 'waiting_time_updated' || eventType === 'doctor_called' || eventType === 'consultation_completed';
+                card.style.display = isQueue ? 'flex' : 'none';
+            } else if (category === 'payments') {
+                const isPay = eventType === 'payment_successful';
+                card.style.display = isPay ? 'flex' : 'none';
+            }
+        });
+    }
+
+    function markCardNotificationRead(id, btn) {
+        fetch(`/dashboard/api/notifications/${id}/read`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const card = btn.closest('.notif-card');
+                card.classList.remove('unread');
+                card.dataset.read = 'true';
+                btn.outerHTML = '<span class="notif-read-status"><i class="fa-solid fa-check"></i> Read</span>';
+                
+                const pill = document.getElementById('allPageUnreadCount');
+                if (pill) {
+                    pill.textContent = `${data.unread_count} Unread`;
+                }
+            }
+        })
+        .catch(err => console.error('Error marking read:', err));
+    }
+
+    function markAllNotificationsRead() {
+        fetch('/dashboard/api/notifications/mark-all-read', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                document.querySelectorAll('.notif-card').forEach(card => {
+                    card.classList.remove('unread');
+                    card.dataset.read = 'true';
+                    const markBtn = card.querySelector('.btn-mark-single-read');
+                    if (markBtn) {
+                        markBtn.outerHTML = '<span class="notif-read-status"><i class="fa-solid fa-check"></i> Read</span>';
+                    }
+                });
+                const pill = document.getElementById('allPageUnreadCount');
+                if (pill) {
+                    pill.textContent = '0 Unread';
+                }
+            }
+        })
+        .catch(err => console.error('Error marking all read:', err));
+    }
+</script>
+{% endblock %}

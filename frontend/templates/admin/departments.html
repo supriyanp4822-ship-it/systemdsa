@@ -1,0 +1,134 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Department Management — Hospital QueueMS Admin{% endblock %}
+
+{% block content %}
+<div class="admin-topbar">
+    <div>
+        <h2 style="margin: 0; color: #0d3b66; font-size: 1.6rem; font-weight: 800;">
+            <i class="fa-solid fa-building-user" style="color: #3b82f6;"></i> Department Management
+        </h2>
+        <p style="margin: 3px 0 0; color: #64748b; font-size: 0.9rem;">
+            Configure clinical departments, doctor assignments, and track active waiting loads.
+        </p>
+    </div>
+
+    <div>
+        <button type="button" class="btn btn-primary btn-sm" onclick="openModal('addDeptModal')" style="border-radius: 8px; font-weight: 700;">
+            <i class="fa-solid fa-plus"></i> Add Department
+        </button>
+    </div>
+</div>
+
+<div class="admin-card">
+    <div class="table-responsive">
+        <table class="table-admin">
+            <thead>
+                <tr>
+                    <th>Department Name</th>
+                    <th>Hospital</th>
+                    <th>Doctor Count</th>
+                    <th>Current Waiting Patients</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for dept in departments %}
+                <tr>
+                    <td>
+                        <strong style="color: #0f172a; font-size: 0.95rem;">{{ dept.name }}</strong>
+                        <div style="color: #64748b; font-size: 0.78rem;">{{ dept.description or 'Healthcare Specialization' }}</div>
+                    </td>
+                    <td>
+                        <span style="color: #334155; font-size: 0.85rem;"><i class="fa-solid fa-hospital" style="color: #3b82f6; margin-right: 4px;"></i> All Hospitals</span>
+                    </td>
+                    <td>
+                        <span class="badge badge-info">{{ dept.doc_count }} Doctors</span>
+                    </td>
+                    <td>
+                        <span class="badge badge-{% if dept.waiting > 0 %}warning{% else %}secondary{% endif %}">
+                            {{ dept.waiting }} Waiting
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge badge-{% if dept.is_active %}success{% else %}danger{% endif %}">
+                            {{ 'Active' if dept.is_active else 'Inactive' }}
+                        </span>
+                    </td>
+                    <td style="text-align: right; white-space: nowrap;">
+                        <button type="button" class="btn btn-outline btn-xs" onclick="openEditDeptModal({{ dept.id }}, '{{ dept.name }}', '{{ dept.description or '' }}')">
+                            <i class="fa-solid fa-pen-to-square"></i> Edit
+                        </button>
+                        <form method="POST" action="{{ url_for('admin.toggle_department', dept_id=dept.id) }}" style="display:inline; margin-left: 4px;">
+                            <button type="submit" class="btn btn-outline btn-xs" title="Toggle Status">
+                                <i class="fa-solid fa-power-off"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" style="text-align: center; color: #94a3b8; padding: 40px;">No departments found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Dept Modal -->
+<div class="modal" id="addDeptModal">
+    <div class="modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="margin: 0; color: #0d3b66;"><i class="fa-solid fa-plus" style="color:#3b82f6;"></i> Add Department</h3>
+            <button type="button" class="btn btn-outline btn-xs" onclick="closeModal('addDeptModal')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <form method="POST" action="{{ url_for('admin.add_department') }}">
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label style="font-weight: 600; font-size: 0.85rem;">Department Name</label>
+                <input type="text" name="name" class="form-control" placeholder="e.g. Cardiology" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 18px;">
+                <label style="font-weight: 600; font-size: 0.85rem;">Description</label>
+                <textarea name="description" class="form-control" rows="3" placeholder="Clinical focus and services..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block" style="border-radius: 10px; font-weight: 700;">Save Department</button>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Dept Modal -->
+<div class="modal" id="editDeptModal">
+    <div class="modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="margin: 0; color: #0d3b66;"><i class="fa-solid fa-pen-to-square" style="color:#3b82f6;"></i> Edit Department</h3>
+            <button type="button" class="btn btn-outline btn-xs" onclick="closeModal('editDeptModal')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <form method="POST" id="editDeptForm" action="">
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label style="font-weight: 600; font-size: 0.85rem;">Department Name</label>
+                <input type="text" name="name" id="editDeptName" class="form-control" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 18px;">
+                <label style="font-weight: 600; font-size: 0.85rem;">Description</label>
+                <textarea name="description" id="editDeptDesc" class="form-control" rows="3"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block" style="border-radius: 10px; font-weight: 700;">Update Department</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openEditDeptModal(id, name, desc) {
+    document.getElementById('editDeptForm').action = `/admin/departments/edit/${id}`;
+    document.getElementById('editDeptName').value = name;
+    document.getElementById('editDeptDesc').value = desc;
+    openModal('editDeptModal');
+}
+</script>
+{% endblock %}
