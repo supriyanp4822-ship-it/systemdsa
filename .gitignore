@@ -1,4 +1,3 @@
-# Python
 __pycache__/
 *.py[cod]
 *$py.class
@@ -20,30 +19,26 @@ wheels/
 .installed.cfg
 *.egg
 
-# Virtual Environment
 .venv/
 venv/
 ENV/
 env/
 
-# Environment Variables & Secrets
 .env
 .env.local
 *.pem
 *.key
 
-# Database & Local Cache
 instance/
 *.sqlite
 *.db
 
-# IDE & Editor files
 .idea/
 .vscode/
 *.swp
 *.swo
 .DS_Store
 
-# Logs & Temp
+
 *.log
 tmp/
